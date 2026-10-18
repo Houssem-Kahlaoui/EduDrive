@@ -58,3 +58,4 @@ build/
 *.sqlite
 *.h2.db
 
+src/main/resources/db.properties
