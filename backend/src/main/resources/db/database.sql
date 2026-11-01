@@ -4,7 +4,6 @@ CREATE DATABASE edudrive_db
     COLLATE utf8mb4_unicode_ci;
 USE edudrive_db;
 
-
 CREATE TABLE forfait (
                          id              BIGINT AUTO_INCREMENT PRIMARY KEY,
                          nom             VARCHAR(100) NOT NULL,
@@ -12,7 +11,9 @@ CREATE TABLE forfait (
                          heures_code     INT NOT NULL DEFAULT 0,
                          heures_conduite INT NOT NULL DEFAULT 0,
                          prix            DECIMAL(10,2) NOT NULL,
-                         actif           BOOLEAN NOT NULL DEFAULT TRUE
+                         actif           BOOLEAN NOT NULL DEFAULT TRUE,
+                         created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                         updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE vehicule (
@@ -20,7 +21,9 @@ CREATE TABLE vehicule (
                           immatriculation VARCHAR(30) NOT NULL UNIQUE,
                           marque          VARCHAR(50),
                           modele          VARCHAR(50),
-                          etat            ENUM('DISPONIBLE','ENTRETIEN','PANNE') NOT NULL DEFAULT 'DISPONIBLE'
+                          etat            ENUM('DISPONIBLE','ENTRETIEN','PANNE') NOT NULL DEFAULT 'DISPONIBLE',
+                          created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE utilisateur (
@@ -31,7 +34,9 @@ CREATE TABLE utilisateur (
                              mot_de_passe    VARCHAR(255) NOT NULL,
                              telephone       VARCHAR(20),
                              actif           BOOLEAN NOT NULL DEFAULT TRUE,
-                             role            ENUM('CANDIDAT','MONITEUR','ADMIN') NOT NULL
+                             role            ENUM('CANDIDAT','MONITEUR','ADMIN') NOT NULL,
+                             created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                             updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE candidat (
@@ -47,6 +52,8 @@ CREATE TABLE candidat (
                           heures_code_restantes   INT NOT NULL DEFAULT 0,
                           heures_conduite_restantes INT NOT NULL DEFAULT 0,
                           dossier_complet         BOOLEAN NOT NULL DEFAULT FALSE,
+                          created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
                           CONSTRAINT fk_candidat_utilisateur FOREIGN KEY (id) REFERENCES utilisateur(id) ON DELETE CASCADE,
                           CONSTRAINT fk_candidat_forfait FOREIGN KEY (forfait_id) REFERENCES forfait(id) ON DELETE SET NULL
@@ -55,11 +62,15 @@ CREATE TABLE candidat (
 CREATE TABLE moniteur (
                           id              BIGINT PRIMARY KEY,
                           specialite      ENUM('CODE','CONDUITE','CODE_CONDUITE') NOT NULL,
+                          created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                          updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                           CONSTRAINT fk_moniteur_utilisateur FOREIGN KEY (id) REFERENCES utilisateur(id) ON DELETE CASCADE
 );
 
 CREATE TABLE admin (
                        id              BIGINT PRIMARY KEY,
+                       created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       updated_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                        CONSTRAINT fk_admin_utilisateur FOREIGN KEY (id) REFERENCES utilisateur(id) ON DELETE CASCADE
 );
 
@@ -78,6 +89,8 @@ CREATE TABLE seance (
                         motif_refus             VARCHAR(255),
                         note                    INT,
                         commentaire             TEXT,
+                        created_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
                         CONSTRAINT fk_seance_candidat FOREIGN KEY (candidat_id) REFERENCES candidat(id) ON DELETE CASCADE,
                         CONSTRAINT fk_seance_moniteur FOREIGN KEY (moniteur_id) REFERENCES moniteur(id) ON DELETE CASCADE,
@@ -92,6 +105,8 @@ CREATE TABLE examen (
                         heure               TIME,
                         resultat            ENUM('REUSSI','ECHOUE','EN_ATTENTE') NOT NULL DEFAULT 'EN_ATTENTE',
                         numero_tentative    INT NOT NULL DEFAULT 1,
+                        created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
                         CONSTRAINT fk_examen_candidat FOREIGN KEY (candidat_id) REFERENCES candidat(id) ON DELETE CASCADE
 );
