@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.edudrive.dao.ForfaitDAO;
 import com.edudrive.dao.UtilisateurDAO;
 import com.edudrive.dto.LoginRequest;
+import com.edudrive.dto.LoginResponse;
 import com.edudrive.exception.ResourceNotFoundException;
 import com.edudrive.model.Forfait;
 import com.edudrive.model.Utilisateur;
@@ -23,6 +24,14 @@ public class Router {
     private record Reponse(int statut, String corps) {}
 
     public void dispatcher(HttpExchange exchange) throws IOException {
+
+        if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+            ajouterEntetesCors(exchange);
+            exchange.sendResponseHeaders(204, -1); // 204 No Content
+            exchange.close();
+            return;
+        }
+
         String methode = exchange.getRequestMethod();
         String chemin = exchange.getRequestURI().getPath();
         String[] segments = chemin.split("/");
@@ -54,9 +63,11 @@ public class Router {
         }
     }
 
-    //Login Route (Post/login)
+    //Login Route ( POST/login)
     private Reponse routeLogin(String methode, HttpExchange exchange) throws IOException {
-        if (!methode.equals("POST")) throw new IllegalArgumentException("Methode non supportee : " + methode);
+        if (!methode.equals("POST")) {
+            throw new IllegalArgumentException("Methode non supportee : " + methode);
+        }
 
         LoginRequest req = lireCorps(exchange, LoginRequest.class);
         Utilisateur user = utilisateurDAO.findByEmailAndPassword(req.email, req.password);
@@ -64,11 +75,24 @@ public class Router {
         if (user == null) {
             return new Reponse(401, "{\"erreur\":\"Email ou mot de passe incorrect\"}");
         }
-        return new Reponse(200, gson.toJson(user));
+
+        // use LoginResponse to hide password
+        LoginResponse response = new LoginResponse(
+                user.getId(),
+                user.getNom(),
+                user.getPrenom(),
+                user.getEmail(),
+                user.getTelephone(),
+                user.isActif(),
+                user.getRole()
+        );
+
+        return new Reponse(200, gson.toJson(response));
     }
 
-    // Forfait Routes
+    //Forfait Routes ( CRUD )
     private Reponse routesForfait(String methode, String[] segments, HttpExchange exchange) throws IOException {
+
         if (segments.length == 2) {
             switch (methode) {
                 case "GET":
@@ -82,6 +106,7 @@ public class Router {
                     throw new IllegalArgumentException("Methode non supportee : " + methode);
             }
         }
+
 
         if (segments.length == 3) {
             Long id = Long.parseLong(segments[2]);
@@ -105,7 +130,7 @@ public class Router {
         throw new ResourceNotFoundException("Route inconnue");
     }
 
-    //
+
     private <T> T lireCorps(HttpExchange exchange, Class<T> classe) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
             String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
@@ -114,7 +139,17 @@ public class Router {
         }
     }
 
+    // Entetes Cors
+    private void ajouterEntetesCors(HttpExchange exchange) {
+        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    }
+
+    //response HTTP
     private void envoyer(HttpExchange exchange, int statut, String corps) throws IOException {
+        ajouterEntetesCors(exchange);
+
         byte[] bytes = corps == null ? new byte[0] : corps.getBytes(StandardCharsets.UTF_8);
         if (bytes.length > 0) {
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
@@ -128,6 +163,7 @@ public class Router {
         }
     }
 
+    //message d'erreur en JSON
     private String messageErreur(Exception e) {
         return "{\"erreur\":\"" + e.getMessage() + "\"}";
     }
