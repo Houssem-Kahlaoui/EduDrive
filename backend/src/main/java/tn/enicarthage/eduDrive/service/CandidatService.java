@@ -28,23 +28,13 @@ public class CandidatService {
     }
 
     public void createCandidat(Candidat c) {
-        // Age required >= 18 Type B , 16 >= Type A1
-        if (c.getDateNaissance() == null) {
-            throw new ValidationException("La date de naissance est obligatoire.");
-        }
-
-        int age = Period.between(c.getDateNaissance(), LocalDate.now()).getYears();
-        int ageMinimum = "A1".equals(c.getTypePermis()) ? 16 : 18;
-
-        if (age < ageMinimum) {
-            throw new ValidationException("Le candidat doit avoir au moins " + ageMinimum + " ans pour le permis " + c.getTypePermis() + ".");
-        }
-
+        validerCandidat(c);
         candidatDAO.create(c);
     }
 
     public void updateCandidat(Long id, Candidat c) {
         getCandidatById(id);
+        validerCandidat(c);
         c.setId(id);
         candidatDAO.update(c);
     }
@@ -52,5 +42,21 @@ public class CandidatService {
     public void deleteCandidat(Long id) {
         getCandidatById(id);
         candidatDAO.delete(id);
+    }
+
+
+    private void validerCandidat(Candidat c) {
+        if (c.getDateNaissance() == null) {
+            throw new ValidationException("La date de naissance est obligatoire.");
+        }
+
+        int age = Period.between(c.getDateNaissance(), LocalDate.now()).getYears();
+
+        String typePermis = (c.getTypePermis() == null) ? "B" : c.getTypePermis();
+        int ageMinimum = "A1".equals(typePermis) ? 16 : 18;
+
+        if (age < ageMinimum) {
+            throw new ValidationException("Le candidat doit avoir au moins " + ageMinimum + " ans pour le permis " + typePermis + ".");
+        }
     }
 }

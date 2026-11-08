@@ -19,23 +19,22 @@ public class SeanceService {
     }
 
     public void create(Seance s) {
+        // 1. Vérifier que la date existe
+        if (s.getDateSeance() == null) {
+            throw new ValidationException("La date de la séance est obligatoire.");
+        }
+        if (s.getHeureDebut() == null) {
+            throw new ValidationException("L'heure de la séance est obligatoire.");
+        }
 
+        // 2. Vérifier que la date n'est pas dans le passé
         if (s.getDateSeance().isBefore(LocalDate.now())) {
             throw new ValidationException("Impossible de planifier une séance dans le passé.");
         }
 
-        //Vérifier les conflits d'horaires
-        for (Seance existante : dao.findAll()) {
-            if (existante.getDateSeance().equals(s.getDateSeance())
-                    && existante.getHeureDebut().equals(s.getHeureDebut())) {
-
-                if (existante.getCandidatId().equals(s.getCandidatId())) {
-                    throw new ValidationException("Ce candidat a déjà une séance à cette heure.");
-                }
-                if (existante.getMoniteurId().equals(s.getMoniteurId())) {
-                    throw new ValidationException("Ce moniteur est déjà occupé à cette heure.");
-                }
-            }
+        // 3. Vérifier les conflits d'horaires (via la méthode SQL du DAO)
+        if (dao.hasConflitHoraire(s.getCandidatId(), s.getMoniteurId(), s.getDateSeance(), s.getHeureDebut())) {
+            throw new ValidationException("Ce candidat ou ce moniteur a déjà une séance à cette heure.");
         }
 
         s.setStatut("PLANIFIEE");
