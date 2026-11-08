@@ -1,5 +1,4 @@
-
-java package tn.enicarthage.eduDrive.dto;
+package tn.enicarthage.eduDrive.dto;
 
 public class MoniteurRequest {
     public String nom;
