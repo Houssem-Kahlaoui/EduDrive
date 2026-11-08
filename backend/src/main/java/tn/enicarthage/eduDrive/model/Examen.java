@@ -1,4 +1,4 @@
-package com.edudrive.model;
+package tn.enicarthage.eduDrive.model;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

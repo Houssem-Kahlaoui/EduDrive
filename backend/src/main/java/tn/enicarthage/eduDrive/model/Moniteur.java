@@ -1,4 +1,4 @@
-package com.edudrive.model;
+package tn.enicarthage.eduDrive.model;
 
 public class Moniteur extends Utilisateur {
     private String specialite;

@@ -1,4 +1,6 @@
-package com.edudrive.model;
+package tn.enicarthage.eduDrive.model;
+
+import java.math.BigDecimal;
 
 public class Forfait {
     private Long id;
@@ -6,13 +8,12 @@ public class Forfait {
     private String typeForfait;
     private int heuresCode;
     private int heuresConduite;
-    private double prix;
+    private BigDecimal prix;
     private boolean actif;
-
     public Forfait() {
     }
 
-    public Forfait(Long id, String nom, String typeForfait, int heuresCode, int heuresConduite, double prix, boolean actif) {
+    public Forfait(Long id, String nom, String typeForfait, int heuresCode, int heuresConduite, BigDecimal prix, boolean actif) {
         this.id = id;
         this.nom = nom;
         this.typeForfait = typeForfait;
@@ -37,8 +38,8 @@ public class Forfait {
     public int getHeuresConduite() { return heuresConduite; }
     public void setHeuresConduite(int heuresConduite) { this.heuresConduite = heuresConduite; }
 
-    public double getPrix() { return prix; }
-    public void setPrix(double prix) { this.prix = prix; }
+    public BigDecimal getPrix() { return prix; }
+    public void setPrix(BigDecimal prix) { this.prix = prix; }
 
     public boolean isActif() { return actif; }
     public void setActif(boolean actif) { this.actif = actif; }
