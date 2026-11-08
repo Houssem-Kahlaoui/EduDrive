@@ -3,3 +3,18 @@
 target/
 build/
 out/
+
+# --- Node / Frontend ---
+node_modules/
+dist/
+.env
+.env.local
+
+# --- Java / Backend ---
+target/
+*.class
+*.jar
+
+# --- IDE ---
+.vscode/
+.idea/
