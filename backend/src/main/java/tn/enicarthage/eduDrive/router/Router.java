@@ -2,32 +2,34 @@ package tn.enicarthage.eduDrive.router;
 
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
-import tn.enicarthage.eduDrive.dao.ForfaitDAO;
-import tn.enicarthage.eduDrive.dao.UtilisateurDAO;
-import tn.enicarthage.eduDrive.dto.LoginRequest;
-import tn.enicarthage.eduDrive.dto.LoginResponse;
+import tn.enicarthage.eduDrive.controller.*;
+import tn.enicarthage.eduDrive.dto.*;
+import tn.enicarthage.eduDrive.exception.GlobalExceptionHandler;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
-import tn.enicarthage.eduDrive.model.Forfait;
-import tn.enicarthage.eduDrive.model.Utilisateur;
+import tn.enicarthage.eduDrive.util.JsonUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
 public class Router {
-    private final Gson gson = new Gson();
-    private final ForfaitDAO forfaitDAO = new ForfaitDAO();
-    private final UtilisateurDAO utilisateurDAO = new UtilisateurDAO();
+    private final Gson gson = JsonUtil.getGson();
+
+    // Controllers
+    private final AuthController authController = new AuthController();
+    private final ForfaitController forfaitController = new ForfaitController();
+    private final CandidatController candidatController = new CandidatController();
+    private final MoniteurController moniteurController = new MoniteurController();
+    private final AdminController adminController = new AdminController();
 
     private record Reponse(int statut, String corps) {}
 
     public void dispatcher(HttpExchange exchange) throws IOException {
-
+        // Gestion CORS (Preflight)
         if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
             ajouterEntetesCors(exchange);
-            exchange.sendResponseHeaders(204, -1); // 204 No Content
+            exchange.sendResponseHeaders(204, -1);
             exchange.close();
             return;
         }
@@ -39,12 +41,9 @@ public class Router {
         try {
             Reponse reponse = router(methode, segments, exchange);
             envoyer(exchange, reponse.statut(), reponse.corps());
-        } catch (ResourceNotFoundException e) {
-            envoyer(exchange, 404, messageErreur(e));
-        } catch (IllegalArgumentException e) {
-            envoyer(exchange, 400, messageErreur(e));
         } catch (Exception e) {
-            envoyer(exchange, 500, messageErreur(e));
+            ErrorResponse error = GlobalExceptionHandler.handle(e);
+            envoyer(exchange, error.statut, gson.toJson(error));
         }
     }
 
@@ -56,80 +55,142 @@ public class Router {
         switch (segments[1]) {
             case "login":
                 return routeLogin(methode, exchange);
-            case "forfaits":
-                return routesForfait(methode, segments, exchange);
+            case "admin":
+                return routeAdmin(methode, segments, exchange);
+            case "candidats":
+                return routeCandidatEspace(methode, segments, exchange);
             default:
                 throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
         }
     }
 
-    //Login Route ( POST/login)
+    // Auth
     private Reponse routeLogin(String methode, HttpExchange exchange) throws IOException {
-        if (!methode.equals("POST")) {
-            throw new IllegalArgumentException("Methode non supportee : " + methode);
-        }
-
+        if (!methode.equals("POST")) throw new IllegalArgumentException("Methode non supportee : " + methode);
         LoginRequest req = lireCorps(exchange, LoginRequest.class);
-        Utilisateur user = utilisateurDAO.findByEmailAndPassword(req.email, req.password);
-
-        if (user == null) {
-            return new Reponse(401, "{\"erreur\":\"Email ou mot de passe incorrect\"}");
-        }
-
-        // use LoginResponse to hide password
-        LoginResponse response = new LoginResponse(
-                user.getId(),
-                user.getNom(),
-                user.getPrenom(),
-                user.getEmail(),
-                user.getTelephone(),
-                user.isActif(),
-                user.getRole()
-        );
-
-        return new Reponse(200, gson.toJson(response));
+        LoginResponse res = authController.login(req);
+        return new Reponse(200, gson.toJson(res));
     }
 
-    //Forfait Routes ( CRUD )
+    // ESPACE ADMIN
+    private Reponse routeAdmin(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length < 3) throw new ResourceNotFoundException("Ressource admin manquante.");
+        String ressource = segments[2];
+
+        switch (ressource) {
+            case "forfaits":   return routesForfait(methode, segments, exchange);
+            case "candidats":  return routesCandidat(methode, segments, exchange);
+            case "moniteurs":  return routesMoniteur(methode, segments, exchange);
+            case "admins":     return routesAdminUser(methode, segments, exchange);
+            default: throw new ResourceNotFoundException("Ressource admin inconnue : " + ressource);
+        }
+    }
+
+    // CRUD FORFAITS
     private Reponse routesForfait(String methode, String[] segments, HttpExchange exchange) throws IOException {
-
-        if (segments.length == 2) {
-            switch (methode) {
-                case "GET":
-                    List<Forfait> forfaits = forfaitDAO.findAll();
-                    return new Reponse(200, gson.toJson(forfaits));
-                case "POST":
-                    Forfait nouveau = lireCorps(exchange, Forfait.class);
-                    forfaitDAO.create(nouveau);
-                    return new Reponse(201, gson.toJson(nouveau));
-                default:
-                    throw new IllegalArgumentException("Methode non supportee : " + methode);
-            }
-        }
-
-
         if (segments.length == 3) {
-            Long id = Long.parseLong(segments[2]);
-            switch (methode) {
-                case "GET":
-                    Forfait f = forfaitDAO.findById(id);
-                    if (f == null) throw new ResourceNotFoundException("Forfait introuvable : " + id);
-                    return new Reponse(200, gson.toJson(f));
-                case "PUT":
-                    Forfait fModif = lireCorps(exchange, Forfait.class);
-                    fModif.setId(id);
-                    forfaitDAO.update(fModif);
-                    return new Reponse(200, gson.toJson(fModif));
-                case "DELETE":
-                    forfaitDAO.delete(id);
-                    return new Reponse(204, "");
-                default:
-                    throw new IllegalArgumentException("Methode non supportee : " + methode);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(forfaitController.getAll()));
+            if (methode.equals("POST")) {
+                ForfaitRequest req = lireCorps(exchange, ForfaitRequest.class);
+                return new Reponse(201, gson.toJson(forfaitController.create(req)));
             }
         }
-        throw new ResourceNotFoundException("Route inconnue");
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(forfaitController.getById(id)));
+            if (methode.equals("PUT")) {
+                ForfaitRequest req = lireCorps(exchange, ForfaitRequest.class);
+                return new Reponse(200, gson.toJson(forfaitController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                forfaitController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
+    // CRUD CANDIDATS
+    private Reponse routesCandidat(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(candidatController.getAll()));
+            if (methode.equals("POST")) {
+                CandidatRequest req = lireCorps(exchange, CandidatRequest.class);
+                return new Reponse(201, gson.toJson(candidatController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(candidatController.getById(id)));
+            if (methode.equals("PUT")) {
+                CandidatRequest req = lireCorps(exchange, CandidatRequest.class);
+                return new Reponse(200, gson.toJson(candidatController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                candidatController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
+    // CRUD MONITEURS
+    private Reponse routesMoniteur(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(moniteurController.getAll()));
+            if (methode.equals("POST")) {
+                MoniteurRequest req = lireCorps(exchange, MoniteurRequest.class);
+                return new Reponse(201, gson.toJson(moniteurController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(moniteurController.getById(id)));
+            if (methode.equals("PUT")) {
+                MoniteurRequest req = lireCorps(exchange, MoniteurRequest.class);
+                return new Reponse(200, gson.toJson(moniteurController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                moniteurController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
+    // CRUD ADMINS
+    private Reponse routesAdminUser(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(adminController.getAll()));
+            if (methode.equals("POST")) {
+                LoginRequest req = lireCorps(exchange, LoginRequest.class);
+                return new Reponse(201, gson.toJson(adminController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(adminController.getById(id)));
+            if (methode.equals("PUT")) {
+                LoginRequest req = lireCorps(exchange, LoginRequest.class);
+                return new Reponse(200, gson.toJson(adminController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                adminController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
+    // --- ESPACE CANDIDAT (PUT /candidats/{id}/forfait) ---
+    private Reponse routeCandidatEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 4 && segments[3].equals("forfait") && methode.equals("PUT")) {
+            Long id = Long.parseLong(segments[2]);
+            ChoixForfaitRequest req = lireCorps(exchange, ChoixForfaitRequest.class);
+            return new Reponse(200, gson.toJson(candidatController.choisirForfait(id, req)));
+        }
+        throw new ResourceNotFoundException("Route candidat inconnue.");
+    }
 
     private <T> T lireCorps(HttpExchange exchange, Class<T> classe) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
@@ -139,17 +200,14 @@ public class Router {
         }
     }
 
-    // Entetes Cors
     private void ajouterEntetesCors(HttpExchange exchange) {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
         exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     }
 
-    //response HTTP
     private void envoyer(HttpExchange exchange, int statut, String corps) throws IOException {
         ajouterEntetesCors(exchange);
-
         byte[] bytes = corps == null ? new byte[0] : corps.getBytes(StandardCharsets.UTF_8);
         if (bytes.length > 0) {
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
@@ -161,10 +219,5 @@ public class Router {
             exchange.sendResponseHeaders(statut, -1);
             exchange.close();
         }
-    }
-
-    //message d'erreur en JSON
-    private String messageErreur(Exception e) {
-        return "{\"erreur\":\"" + e.getMessage() + "\"}";
     }
 }

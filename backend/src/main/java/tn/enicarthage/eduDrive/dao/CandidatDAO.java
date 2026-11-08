@@ -9,17 +9,16 @@ import java.util.List;
 
 public class CandidatDAO {
 
-    //create Candidat
+    // 1. CREATE
     public void create(Candidat candidat) {
         String sqlUser = "INSERT INTO utilisateur(nom, prenom, email, mot_de_passe, telephone, role) VALUES (?, ?, ?, ?, ?, 'CANDIDAT')";
         String sqlCandidat = "INSERT INTO candidat(id, forfait_id, date_naissance, adresse, type_permis, date_inscription, statut_formation, heures_code_restantes, heures_conduite_restantes, dossier_complet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
+        
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            //Insertion dans utilisateur
             try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser, Statement.RETURN_GENERATED_KEYS)) {
                 stmtUser.setString(1, candidat.getNom());
                 stmtUser.setString(2, candidat.getPrenom());
@@ -28,19 +27,21 @@ public class CandidatDAO {
                 stmtUser.setString(5, candidat.getTelephone());
                 stmtUser.executeUpdate();
 
-                //get utilisateur id
                 try (ResultSet rs = stmtUser.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        candidat.setId(rs.getLong(1));
-                    }
+                    if (rs.next()) candidat.setId(rs.getLong(1));
                 }
             }
 
-            //Insertion dans candidat avec l'id recc
             try (PreparedStatement stmtCandidat = conn.prepareStatement(sqlCandidat)) {
                 stmtCandidat.setLong(1, candidat.getId());
-                stmtCandidat.setLong(2, candidat.getForfaitId());
+                
+                if (candidat.getForfaitId() != null) {
+                    stmtCandidat.setLong(2, candidat.getForfaitId());
+                } else {
+                    stmtCandidat.setNull(2, Types.BIGINT);
+                }
 
+                // Gestion des dates
                 stmtCandidat.setDate(3, candidat.getDateNaissance() != null ? Date.valueOf(candidat.getDateNaissance()) : null);
                 stmtCandidat.setString(4, candidat.getAdresse());
                 stmtCandidat.setString(5, candidat.getTypePermis());
@@ -54,16 +55,14 @@ public class CandidatDAO {
             }
 
             conn.commit();
-            System.out.println("Candidat créé avec succès .");
+            System.out.println("Candidat créé avec succès.");
 
         } catch (SQLException e) {
             if (conn != null) {
                 try {
-                    System.err.println("!Erreur");
                     conn.rollback();
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                    System.err.println("Erreur, rollback effectué.");
+                } catch (SQLException ex) { ex.printStackTrace(); }
             }
             e.printStackTrace();
         } finally {
@@ -73,50 +72,38 @@ public class CandidatDAO {
         }
     }
 
-    //read all candidats
+    // 2. READ (Tous)
     public List<Candidat> findAll() {
         List<Candidat> candidats = new ArrayList<>();
-        // Requête avec JOIN pour récupérer les infos de 'utilisateur' et 'candidat'
         String sql = "SELECT u.*, c.* FROM utilisateur u JOIN candidat c ON u.id = c.id";
-
+        
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                candidats.add(mapResultSetToCandidat(rs));
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+            while (rs.next()) candidats.add(mapResultSetToCandidat(rs));
+        } catch (SQLException e) { e.printStackTrace(); }
         return candidats;
     }
 
-    //read Candidat with id
+    // 3. READ (Par ID)
     public Candidat findById(Long id) {
         String sql = "SELECT u.*, c.* FROM utilisateur u JOIN candidat c ON u.id = c.id WHERE u.id = ?";
-
+        
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setLong(1, id);
-
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToCandidat(rs);
-                }
+                if (rs.next()) return mapResultSetToCandidat(rs);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
 
-    //update utilisateur + candidat
+    // 4. UPDATE
     public void update(Candidat candidat) {
         String sqlUser = "UPDATE utilisateur SET nom=?, prenom=?, email=?, mot_de_passe=?, telephone=? WHERE id=?";
         String sqlCandidat = "UPDATE candidat SET forfait_id=?, date_naissance=?, adresse=?, type_permis=?, date_inscription=?, statut_formation=?, heures_code_restantes=?, heures_conduite_restantes=?, dossier_complet=? WHERE id=?";
-
+        
         Connection conn = null;
         try {
             conn = DatabaseConnection.getConnection();
@@ -133,7 +120,13 @@ public class CandidatDAO {
             }
 
             try (PreparedStatement stmtCandidat = conn.prepareStatement(sqlCandidat)) {
-                stmtCandidat.setLong(1, candidat.getForfaitId());
+                // GESTION DU NULL POUR forfait_id
+                if (candidat.getForfaitId() != null) {
+                    stmtCandidat.setLong(1, candidat.getForfaitId());
+                } else {
+                    stmtCandidat.setNull(1, Types.BIGINT);
+                }
+
                 stmtCandidat.setDate(2, candidat.getDateNaissance() != null ? Date.valueOf(candidat.getDateNaissance()) : null);
                 stmtCandidat.setString(3, candidat.getAdresse());
                 stmtCandidat.setString(4, candidat.getTypePermis());
@@ -147,7 +140,7 @@ public class CandidatDAO {
             }
 
             conn.commit();
-            System.out.println("Candidat mis à jour avec succès.");
+            System.out.println("Candidat mis à jour.");
 
         } catch (SQLException e) {
             if (conn != null) {
@@ -161,26 +154,19 @@ public class CandidatDAO {
         }
     }
 
-    //delete candidat with id ( utilisateur avec delete CASCADE )
+    // 5. DELETE
     public void delete(Long id) {
         String sql = "DELETE FROM utilisateur WHERE id = ?";
-
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setLong(1, id);
             stmt.executeUpdate();
             System.out.println("Candidat supprimé : " + id);
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
     }
 
-    //ORM
     private Candidat mapResultSetToCandidat(ResultSet rs) throws SQLException {
         Candidat c = new Candidat();
-        //champs de utilisateur
         c.setId(rs.getLong("id"));
         c.setNom(rs.getString("nom"));
         c.setPrenom(rs.getString("prenom"));
@@ -189,9 +175,11 @@ public class CandidatDAO {
         c.setTelephone(rs.getString("telephone"));
         c.setActif(rs.getBoolean("actif"));
         c.setRole(rs.getString("role"));
+        
+        // GESTION DU NULL POUR forfait_id
+        long forfaitId = rs.getLong("forfait_id");
+        c.setForfaitId(rs.wasNull() ? null : forfaitId);
 
-        //champs de candidat
-        c.setForfaitId(rs.getLong("forfait_id"));
         c.setDateNaissance(rs.getDate("date_naissance") != null ? rs.getDate("date_naissance").toLocalDate() : null);
         c.setAdresse(rs.getString("adresse"));
         c.setTypePermis(rs.getString("type_permis"));
@@ -202,7 +190,7 @@ public class CandidatDAO {
         c.setHeuresCodeRestantes(rs.getInt("heures_code_restantes"));
         c.setHeuresConduiteRestantes(rs.getInt("heures_conduite_restantes"));
         c.setDossierComplet(rs.getBoolean("dossier_complet"));
-
+        
         return c;
     }
 }
