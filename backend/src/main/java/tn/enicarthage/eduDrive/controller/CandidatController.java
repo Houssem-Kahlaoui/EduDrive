@@ -3,6 +3,7 @@ package tn.enicarthage.eduDrive.controller;
 import tn.enicarthage.eduDrive.dao.ForfaitDAO;
 import tn.enicarthage.eduDrive.dto.CandidatRequest;
 import tn.enicarthage.eduDrive.dto.CandidatResponse;
+import tn.enicarthage.eduDrive.dto.ChoixForfaitRequest;
 import tn.enicarthage.eduDrive.model.Candidat;
 import tn.enicarthage.eduDrive.model.Forfait;
 import tn.enicarthage.eduDrive.service.CandidatService;
@@ -33,7 +34,7 @@ public class CandidatController {
         c.setEmail(req.email);
         c.setMotDePasse(req.password);
         c.setTelephone(req.telephone);
-        c.setForfaitId(req.forfaitId);
+        c.setForfaitId(null); 
         c.setDateNaissance(req.dateNaissance);
         c.setAdresse(req.adresse);
         c.setTypePermis(req.typePermis);
@@ -50,10 +51,16 @@ public class CandidatController {
         c.setPrenom(req.prenom);
         c.setEmail(req.email);
         c.setTelephone(req.telephone);
-        c.setForfaitId(req.forfaitId);
         c.setDateNaissance(req.dateNaissance);
         c.setAdresse(req.adresse);
         c.setTypePermis(req.typePermis);
+        service.updateCandidat(id, c);
+        return toResponse(c);
+    }
+
+    public CandidatResponse choisirForfait(Long id, ChoixForfaitRequest req) {
+        Candidat c = service.getCandidatById(id);
+        c.setForfaitId(req.forfaitId);
         service.updateCandidat(id, c);
         return toResponse(c);
     }
