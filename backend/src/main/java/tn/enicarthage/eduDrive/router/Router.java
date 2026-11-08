@@ -6,6 +6,7 @@ import tn.enicarthage.eduDrive.controller.*;
 import tn.enicarthage.eduDrive.dto.*;
 import tn.enicarthage.eduDrive.exception.GlobalExceptionHandler;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
+import tn.enicarthage.eduDrive.util.JsonUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,9 +14,9 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class Router {
-    private final Gson gson = new Gson();
+    private final Gson gson = JsonUtil.getGson();
 
-    // Instanciate all controllers 
+    // Controllers
     private final AuthController authController = new AuthController();
     private final ForfaitController forfaitController = new ForfaitController();
     private final CandidatController candidatController = new CandidatController();
@@ -25,7 +26,7 @@ public class Router {
     private record Reponse(int statut, String corps) {}
 
     public void dispatcher(HttpExchange exchange) throws IOException {
-        // Gestion CORS
+        // Gestion CORS (Preflight)
         if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
             ajouterEntetesCors(exchange);
             exchange.sendResponseHeaders(204, -1);
@@ -52,11 +53,13 @@ public class Router {
         }
 
         switch (segments[1]) {
-            case "login": 
+            case "login":
                 return routeLogin(methode, exchange);
-            case "admin": 
+            case "admin":
                 return routeAdmin(methode, segments, exchange);
-            default: 
+            case "candidats":
+                return routeCandidatEspace(methode, segments, exchange);
+            default:
                 throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
         }
     }
@@ -69,7 +72,7 @@ public class Router {
         return new Reponse(200, gson.toJson(res));
     }
 
-    // Admin
+    // ESPACE ADMIN
     private Reponse routeAdmin(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length < 3) throw new ResourceNotFoundException("Ressource admin manquante.");
         String ressource = segments[2];
@@ -83,7 +86,7 @@ public class Router {
         }
     }
 
-    // Forfait CRUD
+    // CRUD FORFAITS
     private Reponse routesForfait(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(forfaitController.getAll()));
@@ -107,7 +110,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // Condidat CRUD
+    // CRUD CANDIDATS
     private Reponse routesCandidat(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(candidatController.getAll()));
@@ -131,7 +134,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // MONITEURS CRUD
+    // CRUD MONITEURS
     private Reponse routesMoniteur(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(moniteurController.getAll()));
@@ -155,7 +158,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // ADMINS CRUD
+    // CRUD ADMINS
     private Reponse routesAdminUser(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(adminController.getAll()));
@@ -179,7 +182,16 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    //
+    // --- ESPACE CANDIDAT (PUT /candidats/{id}/forfait) ---
+    private Reponse routeCandidatEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 4 && segments[3].equals("forfait") && methode.equals("PUT")) {
+            Long id = Long.parseLong(segments[2]);
+            ChoixForfaitRequest req = lireCorps(exchange, ChoixForfaitRequest.class);
+            return new Reponse(200, gson.toJson(candidatController.choisirForfait(id, req)));
+        }
+        throw new ResourceNotFoundException("Route candidat inconnue.");
+    }
+
     private <T> T lireCorps(HttpExchange exchange, Class<T> classe) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
             String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
