@@ -9,38 +9,32 @@ import java.util.List;
 
 public class ExamenDAO {
 
-    public void create(Examen examen) {
+    public void create(Examen e) {
         String sql = "INSERT INTO examen(candidat_id, type, date_examen, heure, resultat, numero_tentative) VALUES (?, ?, ?, ?, ?, ?)";
-
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-
-            stmt.setLong(1, examen.getCandidatId());
-            stmt.setString(2, examen.getType());
-            stmt.setDate(3, Date.valueOf(examen.getDateExamen()));
-            stmt.setTime(4, Time.valueOf(examen.getHeure()));
-            stmt.setString(5, examen.getResultat());
-            stmt.setInt(6, examen.getNumeroTentative());
-
+            stmt.setLong(1, e.getCandidatId());
+            stmt.setString(2, e.getType());
+            stmt.setDate(3, Date.valueOf(e.getDateExamen()));
+            stmt.setTime(4, Time.valueOf(e.getHeure()));
+            stmt.setString(5, e.getResultat());
+            stmt.setInt(6, e.getNumeroTentative());
             stmt.executeUpdate();
-
             try (ResultSet rs = stmt.getGeneratedKeys()) {
-                if (rs.next()) examen.setId(rs.getLong(1));
+                if (rs.next()) e.setId(rs.getLong(1));
             }
-            System.out.println("Examen créé : " + examen.getId());
-
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException ex) { ex.printStackTrace(); }
     }
 
     public List<Examen> findAll() {
-        List<Examen> examens = new ArrayList<>();
+        List<Examen> list = new ArrayList<>();
         String sql = "SELECT * FROM examen";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) examens.add(mapResultSetToExamen(rs));
-        } catch (SQLException e) { e.printStackTrace(); }
-        return examens;
+            while (rs.next()) list.add(mapRow(rs));
+        } catch (SQLException ex) { ex.printStackTrace(); }
+        return list;
     }
 
     public Examen findById(Long id) {
@@ -49,28 +43,25 @@ public class ExamenDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) return mapResultSetToExamen(rs);
+                if (rs.next()) return mapRow(rs);
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException ex) { ex.printStackTrace(); }
         return null;
     }
 
-    public void update(Examen examen) {
+    public void update(Examen e) {
         String sql = "UPDATE examen SET candidat_id=?, type=?, date_examen=?, heure=?, resultat=?, numero_tentative=? WHERE id=?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setLong(1, examen.getCandidatId());
-            stmt.setString(2, examen.getType());
-            stmt.setDate(3, Date.valueOf(examen.getDateExamen()));
-            stmt.setTime(4, Time.valueOf(examen.getHeure()));
-            stmt.setString(5, examen.getResultat());
-            stmt.setInt(6, examen.getNumeroTentative());
-            stmt.setLong(7, examen.getId());
-
+            stmt.setLong(1, e.getCandidatId());
+            stmt.setString(2, e.getType());
+            stmt.setDate(3, Date.valueOf(e.getDateExamen()));
+            stmt.setTime(4, Time.valueOf(e.getHeure()));
+            stmt.setString(5, e.getResultat());
+            stmt.setInt(6, e.getNumeroTentative());
+            stmt.setLong(7, e.getId());
             stmt.executeUpdate();
-            System.out.println("Examen mis à jour : " + examen.getId());
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException ex) { ex.printStackTrace(); }
     }
 
     public void delete(Long id) {
@@ -79,11 +70,38 @@ public class ExamenDAO {
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setLong(1, id);
             stmt.executeUpdate();
-            System.out.println("Examen supprimé : " + id);
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (SQLException ex) { ex.printStackTrace(); }
     }
 
-    private Examen mapResultSetToExamen(ResultSet rs) throws SQLException {
+    // --- NOUVELLES MÉTHODES POUR LE SERVICE ---
+    public int countByCandidatAndType(Long candidatId, String type) {
+        String sql = "SELECT COUNT(*) FROM examen WHERE candidat_id = ? AND type = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, candidatId);
+            stmt.setString(2, type);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException ex) { ex.printStackTrace(); }
+        return 0;
+    }
+
+    public int countByCandidatAndTypeAndResultat(Long candidatId, String type, String resultat) {
+        String sql = "SELECT COUNT(*) FROM examen WHERE candidat_id = ? AND type = ? AND resultat = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, candidatId);
+            stmt.setString(2, type);
+            stmt.setString(3, resultat);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException ex) { ex.printStackTrace(); }
+        return 0;
+    }
+
+    private Examen mapRow(ResultSet rs) throws SQLException {
         Examen e = new Examen();
         e.setId(rs.getLong("id"));
         e.setCandidatId(rs.getLong("candidat_id"));
