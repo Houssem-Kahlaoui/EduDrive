@@ -6,6 +6,7 @@ import tn.enicarthage.eduDrive.exception.ConflictException;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
 import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.model.Moniteur;
+import tn.enicarthage.eduDrive.util.PasswordUtil;
 
 import java.util.List;
 
@@ -26,25 +27,35 @@ public class MoniteurService {
                 (!m.getSpecialite().equals("CODE") && !m.getSpecialite().equals("CONDUITE") && !m.getSpecialite().equals("CODE_CONDUITE"))) {
             throw new ValidationException("La spécialité doit être CODE, CONDUITE ou CODE_CONDUITE.");
         }
-        
-        // Vérification du doublon d'email à la création
         if (utilisateurDAO.findByEmail(m.getEmail()) != null) {
             throw new ConflictException("Un utilisateur avec cet email existe déjà.");
         }
-        
+        if (m.getMotDePasse() != null && !m.getMotDePasse().isEmpty()) {
+            m.setMotDePasse(PasswordUtil.hash(m.getMotDePasse()));
+        }
         dao.create(m);
     }
 
     public void update(Long id, Moniteur m) {
         Moniteur existant = getById(id);
-        
-        // On vérifie le doublon SEULEMENT si l'email a changé
+
+        if (m.getSpecialite() == null ||
+                (!m.getSpecialite().equals("CODE") && !m.getSpecialite().equals("CONDUITE") && !m.getSpecialite().equals("CODE_CONDUITE"))) {
+            throw new ValidationException("La spécialité doit être CODE, CONDUITE ou CODE_CONDUITE.");
+        }
+
         if (!existant.getEmail().equals(m.getEmail())) {
             if (utilisateurDAO.findByEmail(m.getEmail()) != null) {
                 throw new ConflictException("Un autre utilisateur avec cet email existe déjà.");
             }
         }
-        
+
+        if (m.getMotDePasse() != null
+                && !m.getMotDePasse().isEmpty()
+                && !m.getMotDePasse().equals(existant.getMotDePasse())) {
+            m.setMotDePasse(PasswordUtil.hash(m.getMotDePasse()));
+        }
+
         m.setId(id);
         dao.update(m);
     }
