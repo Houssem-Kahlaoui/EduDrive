@@ -38,4 +38,17 @@ public class SeanceController {
     }
 
     public void delete(Long id) { service.delete(id); }
+
+    // --- NOUVELLES MÉTHODES ---
+    public Seance confirmerParCandidat(Long id) {
+        return service.confirmerParCandidat(id);
+    }
+
+    public Seance confirmerParMoniteur(Long id) {
+        return service.confirmerParMoniteur(id);
+    }
+
+    public Seance refuser(Long id, String motif) {
+        return service.refuser(id, motif);
+    }
 }
