@@ -125,11 +125,11 @@ VALUES ('263 TU 4567', 'Peugeot', '208', 'DISPONIBLE');
 
 INSERT INTO utilisateur (nom, prenom, email, mot_de_passe, telephone, role) VALUES
 ('Admin',    'Système', 'admin@edudrive.tn',
- '$2a$12$YQ8pQZ1wX3aHhZ7oZt1YyeYhT8s4DqM0nJfRr6Gm3qK5W1cV9n2S', '71000000', 'ADMIN'),
+ '$2a$12$KLLacb/ioE4KgtjOZ6476.orOZHQ9btG7cQD8Den.Dg23rKRVc85m', '71000000', 'ADMIN'),
 ('Bouzaine', 'Bechir',  'bechirbouzaine@edudrive.tn',
- '$2a$12$YQ8pQZ1wX3aHhZ7oZt1YyeYhT8s4DqM0nJfRr6Gm3qK5W1cV9n2S', '20111222', 'MONITEUR'),
+ '$2a$12$eY.QfRTsZ6Bz2BsCCcq/Su7z6Sb8fpsJ9dLBdXPaPbIog/JXGdcnG', '20111222', 'MONITEUR'),
 ('Gharbi',   'Amine',   'amine@gmail.com',
- '$2a$12$YQ8pQZ1wX3aHhZ7oZt1YyeYhT8s4DqM0nJfRr6Gm3qK5W1cV9n2S', '55666777', 'CANDIDAT');
+ '$2a$12$SNcZujpc1WS/8Ed5tXWFKu9AJKATKwIimqtz/iUyoxHDfHxQJXpYm', '55666777', 'CANDIDAT');
 
 INSERT INTO admin (id) VALUES (1);
 INSERT INTO moniteur (id, specialite) VALUES (2, 'CONDUITE');
