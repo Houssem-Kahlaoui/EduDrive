@@ -27,7 +27,7 @@ public class MoniteurService {
             throw new ValidationException("La spécialité doit être CODE, CONDUITE ou CODE_CONDUITE.");
         }
         
-        // Vérification du doublon d'email
+        // Vérification du doublon d'email à la création
         if (utilisateurDAO.findByEmail(m.getEmail()) != null) {
             throw new ConflictException("Un utilisateur avec cet email existe déjà.");
         }
@@ -36,7 +36,15 @@ public class MoniteurService {
     }
 
     public void update(Long id, Moniteur m) {
-        getById(id);
+        Moniteur existant = getById(id);
+        
+        // On vérifie le doublon SEULEMENT si l'email a changé
+        if (!existant.getEmail().equals(m.getEmail())) {
+            if (utilisateurDAO.findByEmail(m.getEmail()) != null) {
+                throw new ConflictException("Un autre utilisateur avec cet email existe déjà.");
+            }
+        }
+        
         m.setId(id);
         dao.update(m);
     }
