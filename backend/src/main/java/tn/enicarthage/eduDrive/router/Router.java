@@ -22,7 +22,7 @@ public class Router {
     private final CandidatController candidatController = new CandidatController();
     private final MoniteurController moniteurController = new MoniteurController();
     private final AdminController adminController = new AdminController();
-    private final VehiculeController vehiculeController = new VehiculeController(); // <-- AJOUTÉ
+    private final VehiculeController vehiculeController = new VehiculeController();
     private final SeanceController seanceController = new SeanceController();
     private final ExamenController examenController = new ExamenController();
 
@@ -61,6 +61,8 @@ public class Router {
                 return routeAdmin(methode, segments, exchange);
             case "candidats": 
                 return routeCandidatEspace(methode, segments, exchange);
+            case "seances": // <-- AJOUTÉ
+                return routeSeanceEspace(methode, segments, exchange);
             default: 
                 throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
         }
@@ -84,7 +86,7 @@ public class Router {
             case "candidats":  return routesCandidat(methode, segments, exchange);
             case "moniteurs":  return routesMoniteur(methode, segments, exchange);
             case "admins":     return routesAdminUser(methode, segments, exchange);
-            case "vehicules":  return routesVehicule(methode, segments, exchange); // <-- AJOUTÉ
+            case "vehicules":  return routesVehicule(methode, segments, exchange);
             case "seances":    return routesSeance(methode, segments, exchange);
             case "examens":    return routesExamen(methode, segments, exchange);
             default: throw new ResourceNotFoundException("Ressource admin inconnue : " + ressource);
@@ -267,6 +269,27 @@ public class Router {
             return new Reponse(200, gson.toJson(candidatController.choisirForfait(id, req)));
         }
         throw new ResourceNotFoundException("Route candidat inconnue.");
+    }
+
+    // --- ESPACE SEANCE (Confirmation / Refus) ---
+    private Reponse routeSeanceEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        // PUT /seances/{id}/confirmer/candidat
+        if (segments.length == 5 && segments[3].equals("confirmer") && segments[4].equals("candidat") && methode.equals("PUT")) {
+            Long id = Long.parseLong(segments[2]);
+            return new Reponse(200, gson.toJson(seanceController.confirmerParCandidat(id)));
+        }
+        // PUT /seances/{id}/confirmer/moniteur
+        if (segments.length == 5 && segments[3].equals("confirmer") && segments[4].equals("moniteur") && methode.equals("PUT")) {
+            Long id = Long.parseLong(segments[2]);
+            return new Reponse(200, gson.toJson(seanceController.confirmerParMoniteur(id)));
+        }
+        // PUT /seances/{id}/refuser
+        if (segments.length == 4 && segments[3].equals("refuser") && methode.equals("PUT")) {
+            Long id = Long.parseLong(segments[2]);
+            RefusRequest req = lireCorps(exchange, RefusRequest.class);
+            return new Reponse(200, gson.toJson(seanceController.refuser(id, req.motif)));
+        }
+        throw new ResourceNotFoundException("Route seance inconnue.");
     }
 
     // --- UTILITAIRES ---
