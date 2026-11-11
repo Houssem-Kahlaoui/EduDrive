@@ -19,24 +19,14 @@ public class SeanceService {
     }
 
     public void create(Seance s) {
-        // 1. Vérifier que la date existe
-        if (s.getDateSeance() == null) {
-            throw new ValidationException("La date de la séance est obligatoire.");
-        }
-        if (s.getHeureDebut() == null) {
-            throw new ValidationException("L'heure de la séance est obligatoire.");
-        }
-
-        // 2. Vérifier que la date n'est pas dans le passé
+        if (s.getDateSeance() == null) throw new ValidationException("La date de la séance est obligatoire.");
+        if (s.getHeureDebut() == null) throw new ValidationException("L'heure de la séance est obligatoire.");
         if (s.getDateSeance().isBefore(LocalDate.now())) {
             throw new ValidationException("Impossible de planifier une séance dans le passé.");
         }
-
-        // 3. Vérifier les conflits d'horaires (via la méthode SQL du DAO)
         if (dao.hasConflitHoraire(s.getCandidatId(), s.getMoniteurId(), s.getDateSeance(), s.getHeureDebut())) {
             throw new ValidationException("Ce candidat ou ce moniteur a déjà une séance à cette heure.");
         }
-
         s.setStatut("PLANIFIEE");
         s.setConfirmeParCandidat(false);
         s.setConfirmeParMoniteur(false);
@@ -52,5 +42,36 @@ public class SeanceService {
     public void delete(Long id) {
         getById(id);
         dao.delete(id);
+    }
+
+    // --- NOUVELLES MÉTHODES DE CONFIRMATION ---
+    public Seance confirmerParCandidat(Long id) {
+        Seance s = getById(id);
+        s.setConfirmeParCandidat(true);
+        // Si le moniteur a déjà confirmé, on valide la séance
+        if (s.isConfirmeParMoniteur()) {
+            s.setStatut("CONFIRMEE");
+        }
+        dao.update(s);
+        return s;
+    }
+
+    public Seance confirmerParMoniteur(Long id) {
+        Seance s = getById(id);
+        s.setConfirmeParMoniteur(true);
+        // Si le candidat a déjà confirmé, on valide la séance
+        if (s.isConfirmeParCandidat()) {
+            s.setStatut("CONFIRMEE");
+        }
+        dao.update(s);
+        return s;
+    }
+
+    public Seance refuser(Long id, String motif) {
+        Seance s = getById(id);
+        s.setStatut("REFUSEE");
+        s.setMotifRefus(motif);
+        dao.update(s);
+        return s;
     }
 }
