@@ -33,18 +33,23 @@ public class CandidatService {
 
     public void createCandidat(Candidat c) {
         validerCandidat(c);
-        
-        // Vérification du doublon d'email
         if (utilisateurDAO.findByEmail(c.getEmail()) != null) {
             throw new ConflictException("Un utilisateur avec cet email existe déjà.");
         }
-        
         candidatDAO.create(c);
     }
 
     public void updateCandidat(Long id, Candidat c) {
-        getCandidatById(id);
+        Candidat existant = getCandidatById(id);
         validerCandidat(c);
+        
+        // Vérification du doublon SEULEMENT si l'email a changé
+        if (!existant.getEmail().equals(c.getEmail())) {
+            if (utilisateurDAO.findByEmail(c.getEmail()) != null) {
+                throw new ConflictException("Un autre utilisateur avec cet email existe déjà.");
+            }
+        }
+        
         c.setId(id);
         candidatDAO.update(c);
     }
@@ -60,7 +65,6 @@ public class CandidatService {
         }
 
         int age = Period.between(c.getDateNaissance(), LocalDate.now()).getYears();
-
         String typePermis = (c.getTypePermis() == null) ? "B" : c.getTypePermis();
         int ageMinimum = "A1".equals(typePermis) ? 16 : 18;
 
