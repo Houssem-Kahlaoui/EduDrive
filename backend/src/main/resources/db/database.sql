@@ -124,9 +124,12 @@ INSERT INTO vehicule (immatriculation, marque, modele, etat)
 VALUES ('263 TU 4567', 'Peugeot', '208', 'DISPONIBLE');
 
 INSERT INTO utilisateur (nom, prenom, email, mot_de_passe, telephone, role) VALUES
-                                                                                ('Admin',    'Système',  'admin@edudrive.tn',     'admin123',    '71000000', 'ADMIN'),
-                                                                                ('Bouzaine',  'Bechir',  'bechirbouzaine@edudrive.tn',   'mon123',      '20111222', 'MONITEUR'),
-                                                                                ('Gharbi',   'Amine',    'amine@gmail.com',       'cand123',     '55666777', 'CANDIDAT');
+('Admin',    'Système', 'admin@edudrive.tn',
+ '$2a$12$KLLacb/ioE4KgtjOZ6476.orOZHQ9btG7cQD8Den.Dg23rKRVc85m', '71000000', 'ADMIN'),
+('Bouzaine', 'Bechir',  'bechirbouzaine@edudrive.tn',
+ '$2a$12$eY.QfRTsZ6Bz2BsCCcq/Su7z6Sb8fpsJ9dLBdXPaPbIog/JXGdcnG', '20111222', 'MONITEUR'),
+('Gharbi',   'Amine',   'amine@gmail.com',
+ '$2a$12$SNcZujpc1WS/8Ed5tXWFKu9AJKATKwIimqtz/iUyoxHDfHxQJXpYm', '55666777', 'CANDIDAT');
 
 INSERT INTO admin (id) VALUES (1);
 INSERT INTO moniteur (id, specialite) VALUES (2, 'CONDUITE');

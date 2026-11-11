@@ -2,33 +2,34 @@ package tn.enicarthage.eduDrive.dao;
 
 import tn.enicarthage.eduDrive.config.DatabaseConnection;
 import tn.enicarthage.eduDrive.model.Utilisateur;
+import tn.enicarthage.eduDrive.util.PasswordUtil;
 
 import java.sql.*;
 
 public class UtilisateurDAO {
 
-    // login
     public Utilisateur findByEmailAndPassword(String email, String password) {
-        String sql = "SELECT * FROM utilisateur WHERE email = ? AND mot_de_passe = ?";
+        String sql = "SELECT * FROM utilisateur WHERE email = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, email);
-            stmt.setString(2, password);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToUtilisateur(rs);
+                    Utilisateur u = mapResultSetToUtilisateur(rs);
+                    if (PasswordUtil.verify(password, u.getMotDePasse())) {
+                        return u;
+                    }
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return null; // Authentification échouée
+        return null;
     }
 
-    //find by email
     public Utilisateur findByEmail(String email) {
         String sql = "SELECT * FROM utilisateur WHERE email = ?";
 
@@ -48,7 +49,6 @@ public class UtilisateurDAO {
         return null;
     }
 
-    // ORM
     private Utilisateur mapResultSetToUtilisateur(ResultSet rs) throws SQLException {
         Utilisateur u = new Utilisateur();
         u.setId(rs.getLong("id"));

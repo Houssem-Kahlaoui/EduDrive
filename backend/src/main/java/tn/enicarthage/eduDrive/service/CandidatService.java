@@ -6,6 +6,7 @@ import tn.enicarthage.eduDrive.exception.ConflictException;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
 import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.model.Candidat;
+import tn.enicarthage.eduDrive.util.PasswordUtil;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -36,20 +37,30 @@ public class CandidatService {
         if (utilisateurDAO.findByEmail(c.getEmail()) != null) {
             throw new ConflictException("Un utilisateur avec cet email existe déjà.");
         }
+        // Hash du mot de passe
+        if (c.getMotDePasse() != null && !c.getMotDePasse().isEmpty()) {
+            c.setMotDePasse(PasswordUtil.hash(c.getMotDePasse()));
+        }
         candidatDAO.create(c);
     }
 
     public void updateCandidat(Long id, Candidat c) {
         Candidat existant = getCandidatById(id);
         validerCandidat(c);
-        
-        // Vérification du doublon SEULEMENT si l'email a changé
+
         if (!existant.getEmail().equals(c.getEmail())) {
             if (utilisateurDAO.findByEmail(c.getEmail()) != null) {
                 throw new ConflictException("Un autre utilisateur avec cet email existe déjà.");
             }
         }
-        
+
+        // Si le mot de passe a changé, on re-hash
+        if (c.getMotDePasse() != null
+                && !c.getMotDePasse().isEmpty()
+                && !c.getMotDePasse().equals(existant.getMotDePasse())) {
+            c.setMotDePasse(PasswordUtil.hash(c.getMotDePasse()));
+        }
+
         c.setId(id);
         candidatDAO.update(c);
     }
