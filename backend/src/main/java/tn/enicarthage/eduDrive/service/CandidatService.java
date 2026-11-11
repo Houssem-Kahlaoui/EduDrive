@@ -1,6 +1,8 @@
 package tn.enicarthage.eduDrive.service;
 
 import tn.enicarthage.eduDrive.dao.CandidatDAO;
+import tn.enicarthage.eduDrive.dao.UtilisateurDAO;
+import tn.enicarthage.eduDrive.exception.ConflictException;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
 import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.model.Candidat;
@@ -12,9 +14,11 @@ import java.util.List;
 public class CandidatService {
 
     private final CandidatDAO candidatDAO;
+    private final UtilisateurDAO utilisateurDAO;
 
     public CandidatService() {
         this.candidatDAO = new CandidatDAO();
+        this.utilisateurDAO = new UtilisateurDAO();
     }
 
     public List<Candidat> getAllCandidats() {
@@ -29,6 +33,12 @@ public class CandidatService {
 
     public void createCandidat(Candidat c) {
         validerCandidat(c);
+        
+        // Vérification du doublon d'email
+        if (utilisateurDAO.findByEmail(c.getEmail()) != null) {
+            throw new ConflictException("Un utilisateur avec cet email existe déjà.");
+        }
+        
         candidatDAO.create(c);
     }
 
@@ -43,7 +53,6 @@ public class CandidatService {
         getCandidatById(id);
         candidatDAO.delete(id);
     }
-
 
     private void validerCandidat(Candidat c) {
         if (c.getDateNaissance() == null) {
