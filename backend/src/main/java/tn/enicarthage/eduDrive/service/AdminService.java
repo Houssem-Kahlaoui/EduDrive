@@ -25,17 +25,22 @@ public class AdminService {
         if (a.getEmail() == null || a.getEmail().trim().isEmpty()) {
             throw new ValidationException("L'email est obligatoire.");
         }
-        
-        // Vérification du doublon d'email
         if (utilisateurDAO.findByEmail(a.getEmail()) != null) {
             throw new ConflictException("Un utilisateur avec cet email existe déjà.");
         }
-        
         dao.create(a);
     }
 
     public void update(Long id, Admin a) {
-        getById(id);
+        Admin existant = getById(id);
+        
+        // Vérification du doublon SEULEMENT si l'email a changé
+        if (!existant.getEmail().equals(a.getEmail())) {
+            if (utilisateurDAO.findByEmail(a.getEmail()) != null) {
+                throw new ConflictException("Un autre utilisateur avec cet email existe déjà.");
+            }
+        }
+        
         a.setId(id);
         dao.update(a);
     }
