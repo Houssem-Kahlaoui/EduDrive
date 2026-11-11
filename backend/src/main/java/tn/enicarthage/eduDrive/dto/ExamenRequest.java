@@ -8,4 +8,5 @@ public class ExamenRequest {
     public String type; // "CODE", "CIRCULATION", "MANOEUVRES"
     public LocalDate dateExamen;
     public LocalTime heure;
+    public String resultat;
 }
