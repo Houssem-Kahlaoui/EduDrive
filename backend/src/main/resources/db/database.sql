@@ -78,7 +78,7 @@ CREATE TABLE seance (
                         id                      BIGINT AUTO_INCREMENT PRIMARY KEY,
                         candidat_id             BIGINT NOT NULL,
                         moniteur_id             BIGINT NOT NULL,
-                        vehicule_id             BIGINT NOT NULL,
+                        vehicule_id             BIGINT NULL, -- ✅ NULL autorisé pour les séances de CODE
                         date_seance             DATE NOT NULL,
                         heure_debut             TIME NOT NULL,
                         duree                   INT NOT NULL DEFAULT 60,
@@ -94,7 +94,9 @@ CREATE TABLE seance (
 
                         CONSTRAINT fk_seance_candidat FOREIGN KEY (candidat_id) REFERENCES candidat(id) ON DELETE CASCADE,
                         CONSTRAINT fk_seance_moniteur FOREIGN KEY (moniteur_id) REFERENCES moniteur(id) ON DELETE CASCADE,
-                        CONSTRAINT fk_seance_vehicule FOREIGN KEY (vehicule_id) REFERENCES vehicule(id) ON DELETE CASCADE
+                        CONSTRAINT fk_seance_vehicule FOREIGN KEY (vehicule_id) REFERENCES vehicule(id) ON DELETE SET NULL,
+                        CONSTRAINT chk_seance_duree CHECK (duree > 0),
+                        CONSTRAINT chk_seance_vehicule_code CHECK (type_seance = 'CONDUITE' OR vehicule_id IS NULL)
 );
 
 CREATE TABLE examen (
