@@ -22,11 +22,13 @@ public class Router {
     private final CandidatController candidatController = new CandidatController();
     private final MoniteurController moniteurController = new MoniteurController();
     private final AdminController adminController = new AdminController();
+    private final VehiculeController vehiculeController = new VehiculeController(); // <-- AJOUTÉ
+    private final SeanceController seanceController = new SeanceController();
+    private final ExamenController examenController = new ExamenController();
 
     private record Reponse(int statut, String corps) {}
 
     public void dispatcher(HttpExchange exchange) throws IOException {
-        // Gestion CORS (Preflight)
         if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
             ajouterEntetesCors(exchange);
             exchange.sendResponseHeaders(204, -1);
@@ -53,18 +55,18 @@ public class Router {
         }
 
         switch (segments[1]) {
-            case "login":
+            case "login": 
                 return routeLogin(methode, exchange);
-            case "admin":
+            case "admin": 
                 return routeAdmin(methode, segments, exchange);
-            case "candidats":
+            case "candidats": 
                 return routeCandidatEspace(methode, segments, exchange);
-            default:
+            default: 
                 throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
         }
     }
 
-    // Auth
+    // --- AUTHENTIFICATION ---
     private Reponse routeLogin(String methode, HttpExchange exchange) throws IOException {
         if (!methode.equals("POST")) throw new IllegalArgumentException("Methode non supportee : " + methode);
         LoginRequest req = lireCorps(exchange, LoginRequest.class);
@@ -72,7 +74,7 @@ public class Router {
         return new Reponse(200, gson.toJson(res));
     }
 
-    // ESPACE ADMIN
+    // --- ESPACE ADMIN ---
     private Reponse routeAdmin(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length < 3) throw new ResourceNotFoundException("Ressource admin manquante.");
         String ressource = segments[2];
@@ -82,11 +84,14 @@ public class Router {
             case "candidats":  return routesCandidat(methode, segments, exchange);
             case "moniteurs":  return routesMoniteur(methode, segments, exchange);
             case "admins":     return routesAdminUser(methode, segments, exchange);
+            case "vehicules":  return routesVehicule(methode, segments, exchange); // <-- AJOUTÉ
+            case "seances":    return routesSeance(methode, segments, exchange);
+            case "examens":    return routesExamen(methode, segments, exchange);
             default: throw new ResourceNotFoundException("Ressource admin inconnue : " + ressource);
         }
     }
 
-    // CRUD FORFAITS
+    // --- CRUD FORFAITS ---
     private Reponse routesForfait(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(forfaitController.getAll()));
@@ -110,7 +115,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // CRUD CANDIDATS
+    // --- CRUD CANDIDATS ---
     private Reponse routesCandidat(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(candidatController.getAll()));
@@ -134,7 +139,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // CRUD MONITEURS
+    // --- CRUD MONITEURS ---
     private Reponse routesMoniteur(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(moniteurController.getAll()));
@@ -158,7 +163,7 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
-    // CRUD ADMINS
+    // --- CRUD ADMINS ---
     private Reponse routesAdminUser(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 3) {
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(adminController.getAll()));
@@ -182,6 +187,78 @@ public class Router {
         throw new IllegalArgumentException("Methode non supportee : " + methode);
     }
 
+    // --- CRUD VEHICULES ---
+    private Reponse routesVehicule(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(vehiculeController.getAll()));
+            if (methode.equals("POST")) {
+                VehiculeRequest req = lireCorps(exchange, VehiculeRequest.class);
+                return new Reponse(201, gson.toJson(vehiculeController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(vehiculeController.getById(id)));
+            if (methode.equals("PUT")) {
+                VehiculeRequest req = lireCorps(exchange, VehiculeRequest.class);
+                return new Reponse(200, gson.toJson(vehiculeController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                vehiculeController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
+    // --- CRUD SEANCES ---
+    private Reponse routesSeance(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(seanceController.getAll()));
+            if (methode.equals("POST")) {
+                SeanceRequest req = lireCorps(exchange, SeanceRequest.class);
+                return new Reponse(201, gson.toJson(seanceController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(seanceController.getById(id)));
+            if (methode.equals("PUT")) {
+                SeanceRequest req = lireCorps(exchange, SeanceRequest.class);
+                return new Reponse(200, gson.toJson(seanceController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                seanceController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
+    // --- CRUD EXAMENS ---
+    private Reponse routesExamen(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 3) {
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(examenController.getAll()));
+            if (methode.equals("POST")) {
+                ExamenRequest req = lireCorps(exchange, ExamenRequest.class);
+                return new Reponse(201, gson.toJson(examenController.create(req)));
+            }
+        }
+        if (segments.length == 4) {
+            Long id = Long.parseLong(segments[3]);
+            if (methode.equals("GET")) return new Reponse(200, gson.toJson(examenController.getById(id)));
+            if (methode.equals("PUT")) {
+                ExamenRequest req = lireCorps(exchange, ExamenRequest.class);
+                return new Reponse(200, gson.toJson(examenController.update(id, req)));
+            }
+            if (methode.equals("DELETE")) {
+                examenController.delete(id);
+                return new Reponse(204, "");
+            }
+        }
+        throw new IllegalArgumentException("Methode non supportee : " + methode);
+    }
+
     // --- ESPACE CANDIDAT (PUT /candidats/{id}/forfait) ---
     private Reponse routeCandidatEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 4 && segments[3].equals("forfait") && methode.equals("PUT")) {
@@ -192,6 +269,7 @@ public class Router {
         throw new ResourceNotFoundException("Route candidat inconnue.");
     }
 
+    // --- UTILITAIRES ---
     private <T> T lireCorps(HttpExchange exchange, Class<T> classe) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
             String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);

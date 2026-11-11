@@ -14,6 +14,9 @@ public class GlobalExceptionHandler {
         if (e instanceof ValidationException) {
             return new ErrorResponse(400, e.getMessage());
         }
+        if (e instanceof ConflictException) { 
+            return new ErrorResponse(409, e.getMessage());
+        }
         
         e.printStackTrace(); 
         return new ErrorResponse(500, "Erreur interne du serveur : " + e.getMessage());

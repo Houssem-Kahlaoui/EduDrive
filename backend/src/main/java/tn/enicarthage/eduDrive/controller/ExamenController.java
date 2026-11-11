@@ -25,6 +25,7 @@ public class ExamenController {
         Examen e = service.getById(id);
         e.setDateExamen(req.dateExamen);
         e.setHeure(req.heure);
+        e.setResultat(req.resultat);
         service.update(id, e);
         return service.getById(id);
     }
