@@ -6,6 +6,7 @@ import tn.enicarthage.eduDrive.controller.*;
 import tn.enicarthage.eduDrive.dto.*;
 import tn.enicarthage.eduDrive.exception.GlobalExceptionHandler;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
+import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.util.JsonUtil;
 
 import java.io.IOException;
@@ -16,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 public class Router {
     private final Gson gson = JsonUtil.getGson();
 
-    // Controllers
     private final AuthController authController = new AuthController();
     private final ForfaitController forfaitController = new ForfaitController();
     private final CandidatController candidatController = new CandidatController();
@@ -55,28 +55,22 @@ public class Router {
         }
 
         switch (segments[1]) {
-            case "login": 
-                return routeLogin(methode, exchange);
-            case "admin": 
-                return routeAdmin(methode, segments, exchange);
-            case "candidats": 
-                return routeCandidatEspace(methode, segments, exchange);
-            case "seances": // <-- AJOUTÉ
-                return routeSeanceEspace(methode, segments, exchange);
-            default: 
-                throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
+            case "login":     return routeLogin(methode, exchange);
+            case "admin":     return routeAdmin(methode, segments, exchange);
+            case "candidats": return routeCandidatEspace(methode, segments, exchange);
+            case "moniteurs": return routeMoniteurEspace(methode, segments, exchange);
+            case "seances":   return routeSeanceEspace(methode, segments, exchange);
+            default: throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
         }
     }
 
-    // --- AUTHENTIFICATION ---
     private Reponse routeLogin(String methode, HttpExchange exchange) throws IOException {
-        if (!methode.equals("POST")) throw new IllegalArgumentException("Methode non supportee : " + methode);
+        if (!methode.equals("POST")) throw new ValidationException("Methode non supportee : " + methode);
         LoginRequest req = lireCorps(exchange, LoginRequest.class);
         LoginResponse res = authController.login(req);
         return new Reponse(200, gson.toJson(res));
     }
 
-    // --- ESPACE ADMIN ---
     private Reponse routeAdmin(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length < 3) throw new ResourceNotFoundException("Ressource admin manquante.");
         String ressource = segments[2];
@@ -103,18 +97,15 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(forfaitController.getById(id)));
             if (methode.equals("PUT")) {
                 ForfaitRequest req = lireCorps(exchange, ForfaitRequest.class);
                 return new Reponse(200, gson.toJson(forfaitController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                forfaitController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { forfaitController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD CANDIDATS ---
@@ -127,18 +118,23 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(candidatController.getById(id)));
             if (methode.equals("PUT")) {
                 CandidatRequest req = lireCorps(exchange, CandidatRequest.class);
                 return new Reponse(200, gson.toJson(candidatController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                candidatController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { candidatController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        // GET /admin/candidats/{id}/seances et /examens
+        if (segments.length == 5) {
+            Long id = parseId(segments[3]);
+            if (segments[4].equals("seances") && methode.equals("GET"))
+                return new Reponse(200, gson.toJson(seanceController.getByCandidat(id)));
+            if (segments[4].equals("examens") && methode.equals("GET"))
+                return new Reponse(200, gson.toJson(examenController.getByCandidat(id)));
+        }
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD MONITEURS ---
@@ -151,18 +147,20 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(moniteurController.getById(id)));
             if (methode.equals("PUT")) {
                 MoniteurRequest req = lireCorps(exchange, MoniteurRequest.class);
                 return new Reponse(200, gson.toJson(moniteurController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                moniteurController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { moniteurController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        // GET /admin/moniteurs/{id}/seances
+        if (segments.length == 5 && segments[4].equals("seances") && methode.equals("GET")) {
+            Long id = parseId(segments[3]);
+            return new Reponse(200, gson.toJson(seanceController.getByMoniteur(id)));
+        }
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD ADMINS ---
@@ -175,18 +173,15 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(adminController.getById(id)));
             if (methode.equals("PUT")) {
                 LoginRequest req = lireCorps(exchange, LoginRequest.class);
                 return new Reponse(200, gson.toJson(adminController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                adminController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { adminController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD VEHICULES ---
@@ -199,18 +194,15 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(vehiculeController.getById(id)));
             if (methode.equals("PUT")) {
                 VehiculeRequest req = lireCorps(exchange, VehiculeRequest.class);
                 return new Reponse(200, gson.toJson(vehiculeController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                vehiculeController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { vehiculeController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD SEANCES ---
@@ -223,18 +215,15 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(seanceController.getById(id)));
             if (methode.equals("PUT")) {
                 SeanceRequest req = lireCorps(exchange, SeanceRequest.class);
                 return new Reponse(200, gson.toJson(seanceController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                seanceController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { seanceController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
     // --- CRUD EXAMENS ---
@@ -247,56 +236,65 @@ public class Router {
             }
         }
         if (segments.length == 4) {
-            Long id = Long.parseLong(segments[3]);
+            Long id = parseId(segments[3]);
             if (methode.equals("GET")) return new Reponse(200, gson.toJson(examenController.getById(id)));
             if (methode.equals("PUT")) {
                 ExamenRequest req = lireCorps(exchange, ExamenRequest.class);
                 return new Reponse(200, gson.toJson(examenController.update(id, req)));
             }
-            if (methode.equals("DELETE")) {
-                examenController.delete(id);
-                return new Reponse(204, "");
-            }
+            if (methode.equals("DELETE")) { examenController.delete(id); return new Reponse(204, ""); }
         }
-        throw new IllegalArgumentException("Methode non supportee : " + methode);
+        throw new ValidationException("Methode non supportee : " + methode);
     }
 
-    // --- ESPACE CANDIDAT (PUT /candidats/{id}/forfait) ---
+    // --- ESPACE CANDIDAT ---
     private Reponse routeCandidatEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length == 4 && segments[3].equals("forfait") && methode.equals("PUT")) {
-            Long id = Long.parseLong(segments[2]);
+            Long id = parseId(segments[2]);
             ChoixForfaitRequest req = lireCorps(exchange, ChoixForfaitRequest.class);
             return new Reponse(200, gson.toJson(candidatController.choisirForfait(id, req)));
         }
         throw new ResourceNotFoundException("Route candidat inconnue.");
     }
 
-    // --- ESPACE SEANCE (Confirmation / Refus) ---
+    // --- ESPACE MONITEUR ---
+    private Reponse routeMoniteurEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
+        if (segments.length == 4 && segments[3].equals("seances") && methode.equals("GET")) {
+            Long id = parseId(segments[2]);
+            return new Reponse(200, gson.toJson(seanceController.getByMoniteur(id)));
+        }
+        throw new ResourceNotFoundException("Route moniteur inconnue.");
+    }
+
+    // --- ESPACE SEANCE ---
     private Reponse routeSeanceEspace(String methode, String[] segments, HttpExchange exchange) throws IOException {
-        // PUT /seances/{id}/confirmer/candidat
-        if (segments.length == 5 && segments[3].equals("confirmer") && segments[4].equals("candidat") && methode.equals("PUT")) {
-            Long id = Long.parseLong(segments[2]);
-            return new Reponse(200, gson.toJson(seanceController.confirmerParCandidat(id)));
+        if (segments.length == 5 && segments[3].equals("confirmer") && methode.equals("PUT")) {
+            Long id = parseId(segments[2]);
+            if (segments[4].equals("candidat")) return new Reponse(200, gson.toJson(seanceController.confirmerParCandidat(id)));
+            if (segments[4].equals("moniteur")) return new Reponse(200, gson.toJson(seanceController.confirmerParMoniteur(id)));
         }
-        // PUT /seances/{id}/confirmer/moniteur
-        if (segments.length == 5 && segments[3].equals("confirmer") && segments[4].equals("moniteur") && methode.equals("PUT")) {
-            Long id = Long.parseLong(segments[2]);
-            return new Reponse(200, gson.toJson(seanceController.confirmerParMoniteur(id)));
-        }
-        // PUT /seances/{id}/refuser
         if (segments.length == 4 && segments[3].equals("refuser") && methode.equals("PUT")) {
-            Long id = Long.parseLong(segments[2]);
+            Long id = parseId(segments[2]);
             RefusRequest req = lireCorps(exchange, RefusRequest.class);
             return new Reponse(200, gson.toJson(seanceController.refuser(id, req.motif)));
+        }
+        if (segments.length == 4 && segments[3].equals("terminer") && methode.equals("PUT")) {
+            Long id = parseId(segments[2]);
+            return new Reponse(200, gson.toJson(seanceController.terminer(id)));
         }
         throw new ResourceNotFoundException("Route seance inconnue.");
     }
 
     // --- UTILITAIRES ---
+    private Long parseId(String s) {
+        try { return Long.parseLong(s); }
+        catch (NumberFormatException e) { throw new ValidationException("Identifiant invalide : " + s); }
+    }
+
     private <T> T lireCorps(HttpExchange exchange, Class<T> classe) throws IOException {
         try (InputStream is = exchange.getRequestBody()) {
             String body = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-            if (body.isEmpty()) throw new IllegalArgumentException("Corps de requete vide");
+            if (body.isEmpty()) throw new ValidationException("Corps de requete vide");
             return gson.fromJson(body, classe);
         }
     }
@@ -313,9 +311,7 @@ public class Router {
         if (bytes.length > 0) {
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
             exchange.sendResponseHeaders(statut, bytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(bytes);
-            }
+            try (OutputStream os = exchange.getResponseBody()) { os.write(bytes); }
         } else {
             exchange.sendResponseHeaders(statut, -1);
             exchange.close();

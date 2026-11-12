@@ -113,6 +113,28 @@ public class SeanceDAO {
         return false;
     }
 
+    // NOUVEAU : Séances d'un candidat (triées de la plus récente à la plus ancienne)
+    public List<Seance> findByCandidatId(Long candidatId) {
+        return findBy("SELECT * FROM seance WHERE candidat_id = ? ORDER BY date_seance DESC, heure_debut DESC", candidatId);
+    }
+
+    // NOUVEAU : Séances d'un moniteur (triées de la plus récente à la plus ancienne)
+    public List<Seance> findByMoniteurId(Long moniteurId) {
+        return findBy("SELECT * FROM seance WHERE moniteur_id = ? ORDER BY date_seance DESC, heure_debut DESC", moniteurId);
+    }
+
+    private List<Seance> findBy(String sql, Long id) {
+        List<Seance> list = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException ex) { ex.printStackTrace(); }
+        return list;
+    }
+
     private Seance mapRow(ResultSet rs) throws SQLException {
         Seance s = new Seance();
         s.setId(rs.getLong("id"));

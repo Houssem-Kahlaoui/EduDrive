@@ -30,6 +30,9 @@ public class ExamenService {
 
     public List<Examen> getAll() { return examenDAO.findAll(); }
 
+    // NOUVEAU : Historique des examens d'un candidat
+    public List<Examen> getByCandidat(Long id) { return examenDAO.findByCandidatId(id); }
+
     public Examen getById(Long id) {
         Examen e = examenDAO.findById(id);
         if (e == null) throw new ResourceNotFoundException("Examen introuvable : " + id);

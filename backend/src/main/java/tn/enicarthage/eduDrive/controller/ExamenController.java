@@ -31,4 +31,6 @@ public class ExamenController {
     }
 
     public void delete(Long id) { service.delete(id); }
+
+    public List<Examen> getByCandidat(Long id) { return service.getByCandidat(id); }
 }
