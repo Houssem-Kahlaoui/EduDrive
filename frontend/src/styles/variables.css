@@ -1,0 +1,35 @@
+/* src/styles/variables.css */
+:root {
+  --pri: #2e86c8;
+  --gold: #c9a45c;
+  --bg: #f7fbff;
+  --soft: #e6f2fb;
+  --txt: #1d3a56;
+  --mut: #62788d;
+  --card: #fff;
+  --bd: #d6e6f3;
+  --hero: #e1f0fb;
+  --h1: #e1f0fb;
+  --h2: #f6fbff;
+  --ok: #1f9d63;
+  --ko: #d6334a;
+  --wa: #d98a14;
+}
+
+:root[data-theme="dark"] {
+  --pri: #3d7ab8;
+  --bg: #0d1824;
+  --soft: #132436;
+  --txt: #e8eef5;
+  --mut: #9fb0c2;
+  --card: #16293c;
+  --bd: #243a52;
+  --hero: #0f2f52;
+  --h1: #0f2f52;
+  --h2: #17406b;
+}
+
+:root[data-theme="dark"] .logo,
+:root[data-theme="dark"] .hero .ic img {
+  filter: brightness(1.3);
+}
