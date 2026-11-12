@@ -101,6 +101,20 @@ public class ExamenDAO {
         return 0;
     }
 
+    // NOUVEAU : Historique des examens d'un candidat (du plus récent au plus ancien)
+    public List<Examen> findByCandidatId(Long candidatId) {
+        List<Examen> list = new ArrayList<>();
+        String sql = "SELECT * FROM examen WHERE candidat_id = ? ORDER BY date_examen DESC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, candidatId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        } catch (SQLException ex) { ex.printStackTrace(); }
+        return list;
+    }
+
     private Examen mapRow(ResultSet rs) throws SQLException {
         Examen e = new Examen();
         e.setId(rs.getLong("id"));
