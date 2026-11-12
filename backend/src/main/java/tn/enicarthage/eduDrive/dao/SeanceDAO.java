@@ -118,7 +118,10 @@ public class SeanceDAO {
         s.setId(rs.getLong("id"));
         s.setCandidatId(rs.getLong("candidat_id"));
         s.setMoniteurId(rs.getLong("moniteur_id"));
-        s.setVehiculeId(rs.getLong("vehicule_id"));
+
+        long vId = rs.getLong("vehicule_id");
+        s.setVehiculeId(rs.wasNull() ? null : vId); // ✅ Gestion du NULL
+
         s.setDateSeance(rs.getDate("date_seance").toLocalDate());
         s.setHeureDebut(rs.getTime("heure_debut").toLocalTime());
         s.setDuree(rs.getInt("duree"));
