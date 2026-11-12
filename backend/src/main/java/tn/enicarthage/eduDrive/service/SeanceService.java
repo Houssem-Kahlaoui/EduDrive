@@ -27,6 +27,12 @@ public class SeanceService {
         return s;
     }
 
+    // NOUVEAU : Séances d'un candidat
+    public List<Seance> getByCandidat(Long id) { return dao.findByCandidatId(id); }
+
+    // NOUVEAU : Séances d'un moniteur
+    public List<Seance> getByMoniteur(Long id) { return dao.findByMoniteurId(id); }
+
     public void create(Seance s) {
         if (s.getDateSeance() == null) throw new ValidationException("La date de la séance est obligatoire.");
         if (s.getHeureDebut() == null) throw new ValidationException("L'heure de la séance est obligatoire.");
