@@ -51,4 +51,10 @@ public class SeanceController {
     public Seance refuser(Long id, String motif) {
         return service.refuser(id, motif);
     }
+
+    public List<Seance> getByCandidat(Long id) { return service.getByCandidat(id); }
+
+    public List<Seance> getByMoniteur(Long id) { return service.getByMoniteur(id); }
+
+    public Seance terminer(Long id) { return service.terminer(id); }
 }
