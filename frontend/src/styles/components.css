@@ -1,0 +1,99 @@
+/* src/styles/components.css */
+
+/* ---- BOUTONS ---- */
+.btn {
+  border: 0;
+  border-radius: 99px;
+  padding: 9px 20px;
+  font: 600 14px Poppins, sans-serif;
+  cursor: pointer;
+  background: var(--pri);
+  color: #fff;
+  transition: background .2s, color .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn:hover { opacity: .9; }
+
+.btn.o {
+  background: none;
+  border: 1.5px solid var(--pri);
+  color: var(--pri);
+  padding: 7.5px 20px; /* compenser la bordure */
+}
+.btn.o:hover { background: var(--pri); color: #fff; }
+
+.btn.g { background: var(--gold); }
+.btn.r { background: var(--ko); }
+.btn.s { padding: 5px 12px; font-size: 12px; }
+
+/* ---- CARTES ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--bd);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+/* ---- BADGES (statuts) ---- */
+.bd {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--soft);
+  color: var(--pri);
+}
+.bd.ok { background: #1f9d6322; color: var(--ok); }
+.bd.ko { background: #d6334a22; color: var(--ko); }
+.bd.wa { background: #d98a1422; color: var(--wa); }
+
+/* ---- TABLEAUX ---- */
+.tw { overflow-x: auto; }
+.tw table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.tw th {
+  text-align: left;
+  color: var(--mut);
+  font-weight: 600;
+  padding: 8px;
+  border-bottom: 2px solid var(--bd);
+}
+.tw td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--bd);
+  white-space: nowrap;
+}
+
+/* ---- BARRES DE PROGRESSION ---- */
+.bar {
+  height: 10px;
+  background: var(--soft);
+  border-radius: 9px;
+  overflow: hidden;
+  margin: 6px 0 14px;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+/* ---- KPI (cartes de stat) ---- */
+.kp {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.kp .card b {
+  font-size: 28px;
+  color: var(--pri);
+  display: block;
+}
+.kp .card span { color: var(--mut); font-size: 13px; }

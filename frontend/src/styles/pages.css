@@ -1,0 +1,213 @@
+/* src/styles/pages.css */
+
+/* ---- PAGE AUTH (Login/Register) ---- */
+.au {
+  max-width: 430px;
+  margin: 40px auto;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  background: var(--soft);
+  padding: 5px;
+  border-radius: 99px;
+}
+
+.tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 99px;
+  padding: 8px;
+  background: none;
+  color: var(--txt);
+  font: 500 13px Poppins, sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabs .on {
+  background: var(--pri);
+  color: #fff;
+}
+
+/* ---- FORMULAIRES ---- */
+.fm {
+  display: grid;
+  gap: 12px;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--txt);
+  font: 14px Poppins, sans-serif;
+  font-family: inherit;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--pri);
+  outline-offset: -1px;
+}
+
+/* ---- CALENDRIER ---- */
+.ch {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cg {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.dn {
+  text-align: center;
+  font-size: 12px;
+  color: var(--mut);
+  font-weight: 600;
+}
+
+.cd {
+  min-height: 88px;
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  padding: 4px;
+  font-size: 12px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.cd.o {
+  border: 0;
+  background: none;
+}
+
+.cd b {
+  display: block;
+  color: var(--mut);
+}
+
+.cd.td {
+  border-color: var(--pri);
+  background: var(--soft);
+}
+
+.ev {
+  display: block;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  background: var(--soft);
+  color: var(--pri);
+  border: 1px solid var(--bd);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ev.ok { background: #1f9d6322; color: var(--ok); }
+.ev.ko { background: #d6334a22; color: var(--ko); }
+.ev.wa { background: #d98a1422; color: var(--wa); }
+
+/* ---- MODALE ---- */
+.mb {
+  position: fixed;
+  inset: 0;
+  background: #0009;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow: auto;
+  z-index: 100;
+}
+
+.mc {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+/* =========================================
+   SECTION CONTACT
+   ========================================= */
+.ct {
+  background: var(--soft);
+  color: var(--txt);
+  border-radius: 24px;
+  padding: 34px;
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+/* Grille à 2 colonnes (Texte à gauche, Formulaire à droite) */
+.cc {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+/* Titre "Contact" */
+.ct i {
+  color: var(--gold);
+  font-size: 18px;
+  font-style: normal;
+}
+
+.ct h2 {
+  margin: 4px 0 8px;
+  font-size: 26px;
+}
+
+/* Ligne d'information (icône + texte) */
+.ci {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+/* Le carré blanc autour de l'icône */
+.ci .ib {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--pri);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.ci span {
+  display: block;
+  font-size: 12px;
+  color: var(--mut);
+}
+
+.ci b {
+  font-size: 15px;
+}
+@media (max-width: 760px) {
+  .cc {
+    grid-template-columns: 1fr;
+  }
+}
