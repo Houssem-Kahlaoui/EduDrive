@@ -67,18 +67,21 @@ public class ExamenService {
         e.setCandidatId(existant.getCandidatId());
         e.setType(existant.getType());
         e.setNumeroTentative(existant.getNumeroTentative());
+        e.setId(id);
 
         if (e.getDateExamen() == null) throw new ValidationException("La date d'examen est obligatoire.");
-        if (e.getResultat() == null || !RESULTATS.contains(e.getResultat())) throw new ValidationException("Résultat invalide.");
+        if (e.getResultat() == null || !RESULTATS.contains(e.getResultat()))
+            throw new ValidationException("Résultat invalide.");
 
         boolean nouveauEchec = !"ECHOUE".equals(existant.getResultat()) && "ECHOUE".equals(e.getResultat());
         boolean nouveauReussi = !"REUSSI".equals(existant.getResultat()) && "REUSSI".equals(e.getResultat());
 
-        if (nouveauEchec) appliquerRegleEchec(existant);
-        if (nouveauReussi) appliquerReussite(existant);
-
-        e.setId(id);
+        // ✅ 1. On sauvegarde d'abord l'examen
         examenDAO.update(e);
+
+        // ✅ 2. Ensuite on applique les règles métier (qui peuvent lancer une exception)
+        if (nouveauEchec) appliquerRegleEchec(e);
+        if (nouveauReussi) appliquerReussite(e);
     }
 
     public void delete(Long id) {

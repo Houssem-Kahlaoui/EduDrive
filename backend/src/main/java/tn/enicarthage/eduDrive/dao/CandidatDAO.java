@@ -9,10 +9,9 @@ import java.util.List;
 
 public class CandidatDAO {
 
-    // 1. CREATE
     public void create(Candidat candidat) {
         String sqlUser = "INSERT INTO utilisateur(nom, prenom, email, mot_de_passe, telephone, role) VALUES (?, ?, ?, ?, ?, 'CANDIDAT')";
-        String sqlCandidat = "INSERT INTO candidat(id, forfait_id, date_naissance, adresse, type_permis, date_inscription, statut_formation, heures_code_restantes, heures_conduite_restantes, dossier_complet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlCandidat = "INSERT INTO candidat(id, forfait_id, date_naissance, adresse, type_permis, date_inscription, statut_formation, date_validite_code, date_souscription, heures_code_restantes, heures_conduite_restantes, dossier_complet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         Connection conn = null;
         try {
@@ -35,21 +34,19 @@ public class CandidatDAO {
             try (PreparedStatement stmtCandidat = conn.prepareStatement(sqlCandidat)) {
                 stmtCandidat.setLong(1, candidat.getId());
                 
-                if (candidat.getForfaitId() != null) {
-                    stmtCandidat.setLong(2, candidat.getForfaitId());
-                } else {
-                    stmtCandidat.setNull(2, Types.BIGINT);
-                }
+                if (candidat.getForfaitId() != null) stmtCandidat.setLong(2, candidat.getForfaitId());
+                else stmtCandidat.setNull(2, Types.BIGINT);
 
-                // Gestion des dates
                 stmtCandidat.setDate(3, candidat.getDateNaissance() != null ? Date.valueOf(candidat.getDateNaissance()) : null);
                 stmtCandidat.setString(4, candidat.getAdresse());
                 stmtCandidat.setString(5, candidat.getTypePermis());
                 stmtCandidat.setDate(6, candidat.getDateInscription() != null ? Date.valueOf(candidat.getDateInscription()) : null);
                 stmtCandidat.setString(7, candidat.getStatutFormation());
-                stmtCandidat.setInt(8, candidat.getHeuresCodeRestantes());
-                stmtCandidat.setInt(9, candidat.getHeuresConduiteRestantes());
-                stmtCandidat.setBoolean(10, candidat.isDossierComplet());
+                stmtCandidat.setDate(8, candidat.getDateValiditeCode() != null ? Date.valueOf(candidat.getDateValiditeCode()) : null); // ✅
+                stmtCandidat.setDate(9, candidat.getDateSouscription() != null ? Date.valueOf(candidat.getDateSouscription()) : null); // ✅
+                stmtCandidat.setInt(10, candidat.getHeuresCodeRestantes());
+                stmtCandidat.setInt(11, candidat.getHeuresConduiteRestantes());
+                stmtCandidat.setBoolean(12, candidat.isDossierComplet());
 
                 stmtCandidat.executeUpdate();
             }
@@ -59,10 +56,7 @@ public class CandidatDAO {
 
         } catch (SQLException e) {
             if (conn != null) {
-                try {
-                    conn.rollback();
-                    System.err.println("Erreur, rollback effectué.");
-                } catch (SQLException ex) { ex.printStackTrace(); }
+                try { conn.rollback(); System.err.println("Erreur, rollback effectué."); } catch (SQLException ex) { ex.printStackTrace(); }
             }
             e.printStackTrace();
         } finally {
@@ -72,7 +66,6 @@ public class CandidatDAO {
         }
     }
 
-    // 2. READ (Tous)
     public List<Candidat> findAll() {
         List<Candidat> candidats = new ArrayList<>();
         String sql = "SELECT u.*, c.* FROM utilisateur u JOIN candidat c ON u.id = c.id";
@@ -85,7 +78,6 @@ public class CandidatDAO {
         return candidats;
     }
 
-    // 3. READ (Par ID)
     public Candidat findById(Long id) {
         String sql = "SELECT u.*, c.* FROM utilisateur u JOIN candidat c ON u.id = c.id WHERE u.id = ?";
         
@@ -99,10 +91,9 @@ public class CandidatDAO {
         return null;
     }
 
-    // 4. UPDATE
     public void update(Candidat candidat) {
         String sqlUser = "UPDATE utilisateur SET nom=?, prenom=?, email=?, mot_de_passe=?, telephone=? WHERE id=?";
-        String sqlCandidat = "UPDATE candidat SET forfait_id=?, date_naissance=?, adresse=?, type_permis=?, date_inscription=?, statut_formation=?, heures_code_restantes=?, heures_conduite_restantes=?, dossier_complet=? WHERE id=?";
+        String sqlCandidat = "UPDATE candidat SET forfait_id=?, date_naissance=?, adresse=?, type_permis=?, date_inscription=?, statut_formation=?, date_validite_code=?, date_souscription=?, heures_code_restantes=?, heures_conduite_restantes=?, dossier_complet=? WHERE id=?";
         
         Connection conn = null;
         try {
@@ -120,22 +111,20 @@ public class CandidatDAO {
             }
 
             try (PreparedStatement stmtCandidat = conn.prepareStatement(sqlCandidat)) {
-                // GESTION DU NULL POUR forfait_id
-                if (candidat.getForfaitId() != null) {
-                    stmtCandidat.setLong(1, candidat.getForfaitId());
-                } else {
-                    stmtCandidat.setNull(1, Types.BIGINT);
-                }
+                if (candidat.getForfaitId() != null) stmtCandidat.setLong(1, candidat.getForfaitId());
+                else stmtCandidat.setNull(1, Types.BIGINT);
 
                 stmtCandidat.setDate(2, candidat.getDateNaissance() != null ? Date.valueOf(candidat.getDateNaissance()) : null);
                 stmtCandidat.setString(3, candidat.getAdresse());
                 stmtCandidat.setString(4, candidat.getTypePermis());
                 stmtCandidat.setDate(5, candidat.getDateInscription() != null ? Date.valueOf(candidat.getDateInscription()) : null);
                 stmtCandidat.setString(6, candidat.getStatutFormation());
-                stmtCandidat.setInt(7, candidat.getHeuresCodeRestantes());
-                stmtCandidat.setInt(8, candidat.getHeuresConduiteRestantes());
-                stmtCandidat.setBoolean(9, candidat.isDossierComplet());
-                stmtCandidat.setLong(10, candidat.getId());
+                stmtCandidat.setDate(7, candidat.getDateValiditeCode() != null ? Date.valueOf(candidat.getDateValiditeCode()) : null); // ✅
+                stmtCandidat.setDate(8, candidat.getDateSouscription() != null ? Date.valueOf(candidat.getDateSouscription()) : null); // ✅
+                stmtCandidat.setInt(9, candidat.getHeuresCodeRestantes());
+                stmtCandidat.setInt(10, candidat.getHeuresConduiteRestantes());
+                stmtCandidat.setBoolean(11, candidat.isDossierComplet());
+                stmtCandidat.setLong(12, candidat.getId());
                 stmtCandidat.executeUpdate();
             }
 
@@ -154,7 +143,6 @@ public class CandidatDAO {
         }
     }
 
-    // 5. DELETE
     public void delete(Long id) {
         String sql = "DELETE FROM utilisateur WHERE id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -176,7 +164,6 @@ public class CandidatDAO {
         c.setActif(rs.getBoolean("actif"));
         c.setRole(rs.getString("role"));
         
-        // GESTION DU NULL POUR forfait_id
         long forfaitId = rs.getLong("forfait_id");
         c.setForfaitId(rs.wasNull() ? null : forfaitId);
 

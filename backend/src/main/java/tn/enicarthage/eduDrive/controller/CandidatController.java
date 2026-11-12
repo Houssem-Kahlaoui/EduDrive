@@ -4,6 +4,8 @@ import tn.enicarthage.eduDrive.dao.ForfaitDAO;
 import tn.enicarthage.eduDrive.dto.CandidatRequest;
 import tn.enicarthage.eduDrive.dto.CandidatResponse;
 import tn.enicarthage.eduDrive.dto.ChoixForfaitRequest;
+import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
+import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.model.Candidat;
 import tn.enicarthage.eduDrive.model.Forfait;
 import tn.enicarthage.eduDrive.service.CandidatService;
@@ -59,8 +61,16 @@ public class CandidatController {
     }
 
     public CandidatResponse choisirForfait(Long id, ChoixForfaitRequest req) {
+        if (req.forfaitId == null) throw new ValidationException("Le forfait est obligatoire.");
+        Forfait f = forfaitDAO.findById(req.forfaitId);
+        if (f == null) throw new ResourceNotFoundException("Forfait introuvable : " + req.forfaitId);
+        if (!f.isActif()) throw new ValidationException("Ce forfait n'est plus actif.");
+
         Candidat c = service.getCandidatById(id);
         c.setForfaitId(req.forfaitId);
+        c.setHeuresCodeRestantes(f.getHeuresCode()); // ✅ Copie des heures
+        c.setHeuresConduiteRestantes(f.getHeuresConduite()); // ✅ Copie des heures
+        c.setDateSouscription(LocalDate.now()); // ✅ Date de souscription
         service.updateCandidat(id, c);
         return toResponse(c);
     }
