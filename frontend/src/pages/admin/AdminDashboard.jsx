@@ -36,12 +36,12 @@ export default function AdminDashboard() {
 
   const getNomCandidat = (id) => {
     const c = candidats.find(c => c.id === id);
-    return c ? ${c.prenom} ${c.nom} : 'Inconnu';
+    return c ? `${c.prenom} ${c.nom}` : 'Inconnu';
   };
   
   const getNomMoniteur = (id) => {
     const m = moniteurs.find(m => m.id === id);
-    return m ? ${m.prenom} ${m.nom} : 'Inconnu';
+    return m ? `${m.prenom} ${m.nom}` : 'Inconnu';
   };
 
   const prochainesSeances = [...seances]
