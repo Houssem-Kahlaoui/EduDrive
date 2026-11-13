@@ -1,37 +1,70 @@
-// src/pages/admin/AdminDashboard.jsx
-import Badge from '../../components/ui/Badge'; 
+import { useQuery } from '@tanstack/react-query';
+import { dashboardService } from '../../services/dashboardService';
+import Badge from '../../components/ui/Badge';
+import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
-  const MOCK_KPIS = [
-    { value: '3', label: 'Candidats' },
-    { value: '3', label: 'Moniteurs' },
-    { value: '2', label: 'Séances à confirmer' },
-    { value: '2/3', label: 'Véhicules disponibles' },
-    { value: '1', label: 'Prêts pour l’examen' },
-  ];
+  const { data: seances = [], isLoading: loadSeances } = useQuery({
+    queryKey: ['seances'],
+    queryFn: dashboardService.getSeances,
+  });
 
-  const MOCK_SEANCES = [
-    { date: '2026-11-10', heure: '16:00', type: 'CODE', candidat: 'Aymen Hammami', moniteur: 'Mouna Trabelsi', statut: 'TERMINEE' },
-    { date: '2026-11-12', heure: '09:00', type: 'CONDUITE', candidat: 'Yassine Mansouri', moniteur: 'Sami Ben Ali', statut: 'CONFIRMEE' },
-    { date: '2026-11-13', heure: '14:00', type: 'CODE', candidat: 'Yassine Mansouri', moniteur: 'Mouna Trabelsi', statut: 'PLANIFIEE' },
-    { date: '2026-11-14', heure: '10:00', type: 'CONDUITE', candidat: 'Amira Jlassi', moniteur: 'Sami Ben Ali', statut: 'PLANIFIEE' },
-  ];
+  const { data: candidats = [], isLoading: loadCandidats } = useQuery({
+    queryKey: ['candidats'],
+    queryFn: dashboardService.getCandidats,
+  });
+
+  const { data: moniteurs = [], isLoading: loadMoniteurs } = useQuery({
+    queryKey: ['moniteurs'],
+    queryFn: dashboardService.getMoniteurs,
+  });
+
+  const { data: vehicules = [], isLoading: loadVehicules } = useQuery({
+    queryKey: ['vehicules'],
+    queryFn: dashboardService.getVehicules,
+  });
+
+  if (loadSeances || loadCandidats || loadMoniteurs || loadVehicules) {
+    return <div style={{ textAlign: 'center', padding: '50px' }}>Chargement des données...</div>;
+  }
+
+  const nbCandidats = candidats.length;
+  const nbMoniteurs = moniteurs.length;
+  const nbSeancesAConfirmer = seances.filter(s => s.statut === 'PLANIFIEE').length;
+  const nbVehiculesDispo = vehicules.filter(v => v.etat === 'DISPONIBLE').length;
+  const nbPretsExamen = candidats.filter(c => c.statutFormation === 'PRET_EXAMEN').length;
+
+  const getNomCandidat = (id) => {
+    const c = candidats.find(c => c.id === id);
+    return c ? ${c.prenom} ${c.nom} : 'Inconnu';
+  };
+  
+  const getNomMoniteur = (id) => {
+    const m = moniteurs.find(m => m.id === id);
+    return m ? ${m.prenom} ${m.nom} : 'Inconnu';
+  };
+
+  const prochainesSeances = [...seances]
+    .sort((a, b) => new Date(b.dateSeance) - new Date(a.dateSeance))
+    .slice(0, 5);
 
   return (
     <>
       <h2 style={{ marginBottom: '20px', fontSize: '22px' }}>Tableau de bord</h2>
       
       <div className="kp">
-        {MOCK_KPIS.map((kpi, index) => (
-          <div className="card" key={index}>
-            <b>{kpi.value}</b>
-            <span>{kpi.label}</span>
-          </div>
-        ))}
+        <div className="card"><b>{nbCandidats}</b><span>Candidats</span></div>
+        <div className="card"><b>{nbMoniteurs}</b><span>Moniteurs</span></div>
+        <div className="card"><b>{nbSeancesAConfirmer}</b><span>Séances à confirmer</span></div>
+        <div className="card"><b>{nbVehiculesDispo}/{vehicules.length}</b><span>Véhicules disponibles</span></div>
+        <div className="card"><b>{nbPretsExamen}</b><span>Prêts pour l’examen</span></div>
       </div>
 
       <div className="card" style={{ marginTop: '20px' }}>
-        <h3 style={{ marginBottom: '16px' }}>Prochaines séances</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0 }}>Prochaines séances</h3>
+          <Link to="/admin/seances" className="btn o s">Voir tout</Link>
+        </div>
         
         <div className="tw">
           <table>
@@ -46,16 +79,20 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {MOCK_SEANCES.map((s, i) => (
-                <tr key={i}>
-                  <td>{s.date}</td>
-                  <td>{s.heure}</td>
-                  <td>{s.type}</td>
-                  <td>{s.candidat}</td>
-                  <td>{s.moniteur}</td>
-                  <td><Badge status={s.statut} /></td>
-                </tr>
-              ))}
+              {prochainesSeances.length > 0 ? (
+                prochainesSeances.map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.dateSeance}</td>
+                    <td>{s.heureDebut ? s.heureDebut.substring(0, 5) : ''}</td>
+                    <td>{s.typeSeance}</td>
+                    <td>{getNomCandidat(s.candidatId)}</td>
+                    <td>{getNomMoniteur(s.moniteurId)}</td>
+                    <td><Badge status={s.statut} /></td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="6" style={{ textAlign: 'center' }}>Aucune séance planifiée</td></tr>
+              )}
             </tbody>
           </table>
         </div>
