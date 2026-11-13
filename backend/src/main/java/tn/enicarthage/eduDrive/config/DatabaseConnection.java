@@ -22,11 +22,11 @@ public final class DatabaseConnection {
 
     static {
         try {
-            InputStream input = DatabaseConnection.class.getClassLoader().getResourceAsStream("db.properties");
+            InputStream input = DatabaseConnection.class.getClassLoader().getResourceAsStream("config.properties");
             Properties prop = new Properties();
 
             if (input == null) {
-                System.err.println("ERREUR CRITIQUE : Impossible de trouver le fichier db.properties");
+                System.err.println("ERREUR CRITIQUE : Impossible de trouver le fichier config.properties");
             } else {
                 prop.load(input);
                 dbUrl = prop.getProperty("db.url");
@@ -34,7 +34,7 @@ public final class DatabaseConnection {
                 dbPassword = prop.getProperty("db.password");
             }
         } catch (Exception ex) {
-            System.err.println("ERREUR lors du chargement de db.properties : " + ex.getMessage());
+            System.err.println("ERREUR lors du chargement de config.properties : " + ex.getMessage());
             ex.printStackTrace();
         }
     }
@@ -59,15 +59,18 @@ public final class DatabaseConnection {
     }
 
     private static void initializeDatabase(String databaseSql) throws SQLException {
+        if (dbUrl == null || dbUser == null) {
+            throw new SQLException("Configuration de la base de données introuvable. Vérifiez config.properties.");
+        }
 
-        String serverUrl = "jdbc:mysql://localhost:3306/?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&allowMultiQueries=true";
-        String user = "root";
-        String password = "admin";
 
-        try (Connection connection = DriverManager.getConnection(serverUrl, user, password);
+        String serverUrl = dbUrl.replaceAll("/" + DATABASE + ".*$", "/") 
+                + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&allowMultiQueries=true";
+
+        try (Connection connection = DriverManager.getConnection(serverUrl, dbUser, dbPassword);
              Statement statement = connection.createStatement()) {
 
-            String database = "`" + DATABASE.replace(" ", " ") + "`";
+            String database = "`" + DATABASE + "`";
 
             statement.executeUpdate("CREATE DATABASE IF NOT EXISTS " + database
                     + " CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");

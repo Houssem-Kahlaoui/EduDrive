@@ -1,6 +1,7 @@
 package tn.enicarthage.eduDrive.dto;
 
 public class LoginResponse {
+    public String token; 
     public Long id;
     public String nom;
     public String prenom;
@@ -9,7 +10,8 @@ public class LoginResponse {
     public boolean actif;
     public String role;
 
-    public LoginResponse(Long id, String nom, String prenom, String email, String telephone, boolean actif, String role) {
+    public LoginResponse(String token, Long id, String nom, String prenom, String email, String telephone, boolean actif, String role) {
+        this.token = token; 
         this.id = id;
         this.nom = nom;
         this.prenom = prenom;

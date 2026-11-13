@@ -4,10 +4,12 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import tn.enicarthage.eduDrive.controller.*;
 import tn.enicarthage.eduDrive.dto.*;
+import tn.enicarthage.eduDrive.exception.AuthenticationException;
 import tn.enicarthage.eduDrive.exception.GlobalExceptionHandler;
 import tn.enicarthage.eduDrive.exception.ResourceNotFoundException;
 import tn.enicarthage.eduDrive.exception.ValidationException;
 import tn.enicarthage.eduDrive.util.JsonUtil;
+import tn.enicarthage.eduDrive.util.JwtUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 public class Router {
     private final Gson gson = JsonUtil.getGson();
 
+    // Controllers
     private final AuthController authController = new AuthController();
     private final ForfaitController forfaitController = new ForfaitController();
     private final CandidatController candidatController = new CandidatController();
@@ -54,16 +57,41 @@ public class Router {
             throw new ResourceNotFoundException("Route vide ou inconnue.");
         }
 
-        switch (segments[1]) {
-            case "login":     return routeLogin(methode, exchange);
+        String route = segments[1];
+
+        if (route.equals("login")) {
+            return routeLogin(methode, exchange);
+        }
+
+        //
+        verifierToken(exchange);
+
+        // 
+        switch (route) {
             case "admin":     return routeAdmin(methode, segments, exchange);
             case "candidats": return routeCandidatEspace(methode, segments, exchange);
             case "moniteurs": return routeMoniteurEspace(methode, segments, exchange);
             case "seances":   return routeSeanceEspace(methode, segments, exchange);
-            default: throw new ResourceNotFoundException("Route inconnue : /" + segments[1]);
+            default: throw new ResourceNotFoundException("Route inconnue : /" + route);
         }
     }
 
+    //JWT token verification
+    private void verifierToken(HttpExchange exchange) {
+        String authHeader = exchange.getRequestHeaders().getFirst("Authorization");
+        
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new AuthenticationException("Token manquant ou invalide. Veuillez vous connecter.");
+        }
+
+        String token = authHeader.substring(7); // Enlève "Bearer "
+        
+        if (!JwtUtil.validateToken(token)) {
+            throw new AuthenticationException("Token expiré ou invalide. Veuillez vous reconnecter.");
+        }
+    }
+
+    // --- AUTHENTIFICATION ---
     private Reponse routeLogin(String methode, HttpExchange exchange) throws IOException {
         if (!methode.equals("POST")) throw new ValidationException("Methode non supportee : " + methode);
         LoginRequest req = lireCorps(exchange, LoginRequest.class);
@@ -71,6 +99,7 @@ public class Router {
         return new Reponse(200, gson.toJson(res));
     }
 
+    // --- ESPACE ADMIN ---
     private Reponse routeAdmin(String methode, String[] segments, HttpExchange exchange) throws IOException {
         if (segments.length < 3) throw new ResourceNotFoundException("Ressource admin manquante.");
         String ressource = segments[2];
@@ -126,7 +155,6 @@ public class Router {
             }
             if (methode.equals("DELETE")) { candidatController.delete(id); return new Reponse(204, ""); }
         }
-        // GET /admin/candidats/{id}/seances et /examens
         if (segments.length == 5) {
             Long id = parseId(segments[3]);
             if (segments[4].equals("seances") && methode.equals("GET"))
@@ -155,7 +183,6 @@ public class Router {
             }
             if (methode.equals("DELETE")) { moniteurController.delete(id); return new Reponse(204, ""); }
         }
-        // GET /admin/moniteurs/{id}/seances
         if (segments.length == 5 && segments[4].equals("seances") && methode.equals("GET")) {
             Long id = parseId(segments[3]);
             return new Reponse(200, gson.toJson(seanceController.getByMoniteur(id)));
