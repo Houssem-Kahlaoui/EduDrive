@@ -1,0 +1,8 @@
+#DB
+db.url=jdbc:mysql://localhost:3306/edudrive_db
+db.user=root
+db.password=VOTRE_MOT_DE_PASSE_ICI
+
+# JWT
+jwt.secret=...
+jwt.expiration=86400000   //24h en millisecondes (1000*24*3600)
